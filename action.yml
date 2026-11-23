@@ -1,0 +1,47 @@
+name: shopify-app-audit
+description: Check a Shopify app against Shopify's security deadlines, and optionally probe a running deployment.
+author: Enclave
+branding:
+  icon: shield
+  color: green
+inputs:
+  path:
+    description: Directory containing shopify.app.toml
+    default: "."
+  distribution:
+    description: public or custom
+    default: public
+  probe-url:
+    description: Base URL of a deployed app to probe (staging recommended). Leave empty to skip the probe.
+    default: ""
+  fail-on:
+    description: fail, warn or none
+    default: fail
+  sarif:
+    description: Write SARIF to this file for GitHub code scanning
+    default: shopify-app-audit.sarif
+  version:
+    description: npm version of shopify-app-audit to run
+    default: latest
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - shell: bash
+      env:
+        INPUT_PATH: ${{ inputs.path }}
+        INPUT_DISTRIBUTION: ${{ inputs.distribution }}
+        INPUT_PROBE_URL: ${{ inputs.probe-url }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        INPUT_SARIF: ${{ inputs.sarif }}
+        INPUT_VERSION: ${{ inputs.version }}
+      run: |
+        cmd=check
+        args=()
+        if [ -n "$INPUT_PROBE_URL" ]; then cmd=all; args+=(--url "$INPUT_PROBE_URL"); fi
+        npx --yes "shopify-app-audit@$INPUT_VERSION" "$cmd" "$INPUT_PATH" \
+          --distribution "$INPUT_DISTRIBUTION" --fail-on none --format sarif --output "$INPUT_SARIF" "${args[@]}"
+        npx --yes "shopify-app-audit@$INPUT_VERSION" "$cmd" "$INPUT_PATH" \
+          --distribution "$INPUT_DISTRIBUTION" --fail-on "$INPUT_FAIL_ON" "${args[@]}"

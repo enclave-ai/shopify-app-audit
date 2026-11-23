@@ -1,0 +1,30 @@
+client_id = "0000000000000000000000000000000b"
+name = "Reviews Demo (compliant)"
+application_url = "https://reviews-demo.example.com"
+embedded = true
+
+[access_scopes]
+scopes = "read_products"
+
+[auth]
+redirect_urls = ["https://reviews-demo.example.com/auth/callback"]
+
+[webhooks]
+api_version = "2026-10"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  compliance_topics = ["customers/data_request", "customers/redact", "shop/redact"]
+  uri = "/webhooks/compliance"
+
+[app_proxy]
+url = "https://reviews-demo.example.com/proxy"
+subpath = "reviews"
+prefix = "apps"
+
+[network_access]
+allowed_navigation_hosts = ["reviews-demo.example.com"]
+allowed_sources = ["https://*.reviewsdemo.io"]

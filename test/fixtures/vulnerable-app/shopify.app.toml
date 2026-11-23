@@ -1,0 +1,22 @@
+client_id = "0000000000000000000000000000000a"
+name = "Reviews Demo (vulnerable)"
+application_url = "https://reviews-demo.example.com"
+embedded = true
+
+[access_scopes]
+scopes = "read_products,write_script_tags,read_orders"
+
+[auth]
+redirect_urls = ["http://reviews-demo.example.com/auth/callback"]
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = ["app/uninstalled"]
+  uri = "/webhooks/app/uninstalled"
+
+[app_proxy]
+url = "https://reviews-demo.example.com/proxy"
+subpath = "reviews"
+prefix = "apps"
