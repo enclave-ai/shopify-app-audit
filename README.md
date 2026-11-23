@@ -11,7 +11,7 @@ npx shopify-app-audit                                       # Will Shopify block
 npx shopify-app-audit probe --url https://staging.myapp.com # Can my live app be hacked?
 ```
 
-No signup, no config, no API key. The repo audit runs locally and never uploads your code. Code can't show whether your IP allowlist is on, so it's listed as a to-do; to check it for real, add a dev-store token ([how](#already-enforced-prove-your-ip-allowlist-works)).
+No signup, no config, no API key. The repo audit runs locally and never uploads your code. Code can't show whether your IP allowlist is on, so it's listed as a to-do; to check it for real, add your app's Admin API token for a dev store where it's installed ([how](#already-enforced-prove-your-ip-allowlist-works)).
 
 ```text
 shopify-app-audit 0.2.0 · public app · 2026-11-23
