@@ -106,3 +106,32 @@ describe("joinUrl path normalization", async () => {
     expect(new URL(joinUrl("https://x.example.com", "/.//evil.example.net/hook")).host).toBe("x.example.com");
   });
 });
+
+describe("webhook route that answers 404 to bad signatures", async () => {
+  const { createServer } = await import("node:http");
+  const { webhookHmac } = await import("../src/probe/http.js");
+  const serve = async (handler: Parameters<typeof createServer>[0]) => {
+    const server = createServer(handler);
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    return { server, url: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+  };
+  const verifying = (req: import("node:http").IncomingMessage, res: import("node:http").ServerResponse) => {
+    let body = "";
+    req.on("data", (c) => (body += c));
+    req.on("end", () => res.writeHead(req.headers["x-shopify-hmac-sha256"] === webhookHmac("demo-secret", body) ? 200 : 404).end());
+  };
+
+  it("passes when the signed control is accepted", async () => {
+    const { server, url } = await serve(verifying);
+    const f = (await runProbe(options(url))).find((x) => x.id === "WEBHOOK_HMAC");
+    server.close();
+    expect(f?.status).toBe("pass");
+  });
+
+  it("skips when even the signed control gets 404", async () => {
+    const { server, url } = await serve((_req, res) => res.writeHead(404).end());
+    const f = (await runProbe(options(url))).find((x) => x.id === "WEBHOOK_HMAC");
+    server.close();
+    expect(f?.status).toBe("skip");
+  });
+});
