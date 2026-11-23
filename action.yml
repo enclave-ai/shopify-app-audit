@@ -42,6 +42,4 @@ runs:
         args=()
         if [ -n "$INPUT_PROBE_URL" ]; then cmd=all; args+=(--url "$INPUT_PROBE_URL"); fi
         npx --yes "shopify-app-audit@$INPUT_VERSION" "$cmd" "$INPUT_PATH" \
-          --distribution "$INPUT_DISTRIBUTION" --fail-on none --format sarif --output "$INPUT_SARIF" "${args[@]}"
-        npx --yes "shopify-app-audit@$INPUT_VERSION" "$cmd" "$INPUT_PATH" \
-          --distribution "$INPUT_DISTRIBUTION" --fail-on "$INPUT_FAIL_ON" "${args[@]}"
+          --distribution "$INPUT_DISTRIBUTION" --fail-on "$INPUT_FAIL_ON" --format sarif --output "$INPUT_SARIF" "${args[@]}"

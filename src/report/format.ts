@@ -94,6 +94,9 @@ export function toJson(report: Report): string {
   return JSON.stringify(report, null, 2);
 }
 
+const repoPath = (report: Report, file: string): string =>
+  !report.appDir || report.appDir === "." ? file : `${report.appDir.replace(/\\/g, "/").replace(/\/$/, "")}/${file}`;
+
 export function toSarif(report: Report): string {
   const level = (s: Status) => (s === "fail" ? "error" : s === "warn" ? "warning" : "note");
   const findings = report.findings.filter((f) => f.status === "fail" || f.status === "warn");
@@ -127,7 +130,7 @@ export function toSarif(report: Report): string {
               },
               locations: (f.locations?.length ? f.locations : [{ file: "shopify.app.toml" }]).map((l) => ({
                 physicalLocation: {
-                  artifactLocation: { uri: l.file },
+                  artifactLocation: { uri: repoPath(report, l.file) },
                   ...(l.line ? { region: { startLine: l.line } } : {}),
                 },
               })),
