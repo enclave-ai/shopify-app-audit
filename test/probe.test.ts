@@ -99,3 +99,10 @@ describe("joinUrl origin pinning", async () => {
     expect(joinUrl("https://x.example.com", "//evil.example.net/hook")).toBe("https://x.example.com/hook");
   });
 });
+
+describe("joinUrl path normalization", async () => {
+  const { joinUrl } = await import("../src/probe/http.js");
+  it("keeps dot-segment routes on the target origin", () => {
+    expect(new URL(joinUrl("https://x.example.com", "/.//evil.example.net/hook")).host).toBe("x.example.com");
+  });
+});

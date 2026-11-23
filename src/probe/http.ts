@@ -89,7 +89,9 @@ export function appProxySignature(secret: string, params: Record<string, string>
 export function joinUrl(base: string, route: string, extraQuery?: string): string {
   const origin = new URL(base).origin;
   const resolved = new URL(route.startsWith("/") ? route : `/${route}`, origin);
-  const url = new URL(`${resolved.pathname}${resolved.search}`, origin);
+  const url = new URL(origin);
+  url.pathname = resolved.pathname;
+  url.search = resolved.search;
   if (extraQuery) url.search = url.search ? `${url.search}&${extraQuery}` : `?${extraQuery}`;
   return url.toString();
 }

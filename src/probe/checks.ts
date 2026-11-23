@@ -56,7 +56,17 @@ export async function probeWebhookHmac(options: ProbeOptions): Promise<Finding[]
       body: WEBHOOK_BODY,
       timeoutMs: options.timeoutMs,
     });
-    if (missingRoute(forged) && missingRoute(missing)) {
+    const canSign = Boolean(options.clientSecret) && (url.startsWith("https://") || isLocalHost(url));
+    const valid = canSign
+      ? await request(url, {
+          method: "POST",
+          headers: webhookHeaders(options.shop, webhookHmac(options.clientSecret!, WEBHOOK_BODY)),
+          body: WEBHOOK_BODY,
+          timeoutMs: options.timeoutMs,
+        })
+      : undefined;
+    const handlerExists = valid !== undefined && accepted(valid);
+    if (!handlerExists && missingRoute(forged) && missingRoute(missing)) {
       findings.push({
         id: "WEBHOOK_HMAC",
         title: "Webhook endpoint not found",
@@ -79,7 +89,7 @@ export async function probeWebhookHmac(options: ProbeOptions): Promise<Finding[]
         docs: DOCS.webhooks,
         details: [`forged HMAC: ${describe(forged)}`, `no HMAC header: ${describe(missing)}`],
       });
-    } else if (!rejected(forged) || !rejected(missing)) {
+    } else if (![forged, missing].every((r) => rejected(r) || (handlerExists && missingRoute(r)))) {
       findings.push({
         id: "WEBHOOK_HMAC",
         title: "Webhook probe inconclusive",
@@ -94,13 +104,7 @@ export async function probeWebhookHmac(options: ProbeOptions): Promise<Finding[]
         message: `${path} rejected both a forged HMAC (${describe(forged)}) and a missing one (${describe(missing)}).`,
       });
     }
-    if (options.clientSecret && (url.startsWith("https://") || isLocalHost(url))) {
-      const valid = await request(url, {
-        method: "POST",
-        headers: webhookHeaders(options.shop, webhookHmac(options.clientSecret, WEBHOOK_BODY)),
-        body: WEBHOOK_BODY,
-        timeoutMs: options.timeoutMs,
-      });
+    if (valid) {
       if (!accepted(valid) && !valid.error) {
         findings.push({
           id: "WEBHOOK_HMAC_VALID",
