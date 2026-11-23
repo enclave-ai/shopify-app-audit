@@ -149,18 +149,26 @@ async function collectStorefrontUrls(ctx: StaticContext, files: string[]) {
   const sources = new Map<string, Location[]>();
   const navigation = new Map<string, Location[]>();
   for (const file of files) {
-    const text = await ctx.index.read(file);
+    const raw = await ctx.index.read(file);
+    const text = file.endsWith(".liquid") ? raw : raw.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
     const lines = text.split("\n");
     lines.forEach((lineText, i) => {
       if (COMMENT_LINE.test(lineText)) return;
       for (const m of lineText.matchAll(URL_RE)) {
-        const [, href, scheme, hostRaw, port = ""] = m;
+        const [, href, scheme, hostRaw] = m;
+        let port = m[4] ?? "";
         const host = hostRaw.toLowerCase();
         if (isIgnoredHost(host)) continue;
         const loc = { file, line: i + 1 };
         const before = lineText.slice(0, m.index);
-        const isResource = /<link\b[^>]*$/i.test(before);
-        if (href && !isResource) {
+        const linkStart = before.search(/<link\b[^>]*$/i);
+        if (linkStart >= 0) {
+          const tag = lineText.slice(linkStart, lineText.indexOf(">", m.index) + 1 || undefined);
+          if (!/\brel\s*=\s*["']?[^"'>]*\b(stylesheet|preload|modulepreload|icon|manifest)\b/i.test(tag)) continue;
+        }
+        const defaultPort = (scheme.toLowerCase() === "https" && port === ":443") || (scheme.toLowerCase() === "http" && port === ":80");
+        if (defaultPort) port = "";
+        if (href && linkStart < 0) {
           const list = navigation.get(host) ?? [];
           list.push(loc);
           navigation.set(host, list);

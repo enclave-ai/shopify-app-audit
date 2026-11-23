@@ -84,3 +84,10 @@ describe("config selection", () => {
     expect(project.config?.name).toBe("staging");
   });
 });
+
+describe("storefront URL collection", async () => {
+  const findings = await run("urls-app");
+  it("ignores metadata links, default ports and license comments", () => {
+    expect(findings.filter((f) => f.id === "NETWORK_ACCESS" && f.status !== "pass")).toEqual([]);
+  });
+});
