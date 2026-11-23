@@ -96,7 +96,8 @@ describe("passed deadlines", () => {
       findings: [{ id: "IP_ALLOWLIST", title: "IP allowlist", status: "info", message: "m", deadlineId: "ip-allowlist-public" }],
       deadlines: [{ id: "a", date: "2026-11-20", scope: ["public"], feature: "IP allowlist", consequence: "c", source: "s" }],
     };
-    const text = toText(report);
+    // eslint-disable-next-line no-control-regex
+    const text = toText(report).replace(/\x1b\[[0-9;]*m/g, "");
     expect(text).toContain("enforced: in effect since 2026-11-20");
     expect(text).not.toContain("days ago");
     expect(text).toContain("app.enclave.ai");
