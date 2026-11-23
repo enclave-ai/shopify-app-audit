@@ -92,3 +92,10 @@ describe("probe against a broken gateway", () => {
     expect(findings.filter((f) => f.status === "pass")).toEqual([]);
   });
 });
+
+describe("joinUrl origin pinning", async () => {
+  const { joinUrl } = await import("../src/probe/http.js");
+  it("never leaves the target origin", () => {
+    expect(joinUrl("https://x.example.com", "//evil.example.net/hook")).toBe("https://x.example.com/hook");
+  });
+});

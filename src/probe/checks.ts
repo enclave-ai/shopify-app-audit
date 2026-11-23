@@ -20,7 +20,9 @@ const DOCS = {
 };
 
 const accepted = (res: ProbeResponse): boolean => res.status >= 200 && res.status < 300;
-const rejected = (res: ProbeResponse): boolean => res.status >= 400 && res.status < 500;
+const rejected = (res: ProbeResponse): boolean =>
+  res.status >= 400 && res.status < 500 && res.status !== 404 && res.status !== 405;
+const missingRoute = (res: ProbeResponse): boolean => res.status === 404 || res.status === 405;
 
 const describe = (res: ProbeResponse): string =>
   res.error ? `request failed: ${res.error}` : `HTTP ${res.status}`;
@@ -54,12 +56,12 @@ export async function probeWebhookHmac(options: ProbeOptions): Promise<Finding[]
       body: WEBHOOK_BODY,
       timeoutMs: options.timeoutMs,
     });
-    if (forged.status === 404 && missing.status === 404) {
+    if (missingRoute(forged) && missingRoute(missing)) {
       findings.push({
         id: "WEBHOOK_HMAC",
         title: "Webhook endpoint not found",
         status: "skip",
-        message: `${path} returned 404. Pass the real path with --webhook-path.`,
+        message: `${path} returned ${forged.status}, so no webhook handler took the request. Pass the real path with --webhook-path.`,
       });
       continue;
     }
@@ -128,12 +130,12 @@ export async function probeAppProxy(options: ProbeOptions): Promise<Finding[]> {
       joinUrl(options.target, path, `${query}&signature=${appProxySignature("shopify-app-audit-wrong-secret", params)}`),
       { timeoutMs: options.timeoutMs },
     );
-    if (unsigned.status === 404 && forged.status === 404) {
+    if (missingRoute(unsigned) && missingRoute(forged)) {
       findings.push({
         id: "APP_PROXY_SIGNATURE",
         title: "App proxy route not found",
         status: "skip",
-        message: `${path} returned 404. Pass the real path with --proxy-path.`,
+        message: `${path} returned ${unsigned.status}. Pass the real path with --proxy-path.`,
       });
       continue;
     }
