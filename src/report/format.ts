@@ -58,7 +58,7 @@ export function toText(report: Report): string {
   return out.join("\n");
 }
 
-const md = (s: string) => s.replace(/\|/g, "\\|");
+const md = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 
 export function toMarkdown(report: Report): string {
   const c = counts(report.findings);
