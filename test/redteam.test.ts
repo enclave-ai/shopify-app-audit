@@ -86,6 +86,14 @@ describe("passed deadlines", () => {
     expect(deadlinePhrase("2026-12-01", "2026-11-23")).toBe("2026-12-01 (in 8 days)");
   });
 
+  it("words manual checks by the audit date", async () => {
+    const project = await loadProject("test/fixtures/compliant-app");
+    const msg = async (today: string) =>
+      (await runStaticChecks(project, "public", today)).find((f) => f.id === "IP_ALLOWLIST")?.message;
+    expect(await msg("2026-11-18")).toMatch(/^Required from November 20, 2026/);
+    expect(await msg("2026-11-23")).toMatch(/^Required now/);
+  });
+
   it("marks enforced requirements in reports", () => {
     const report: Report = {
       tool: "shopify-app-audit",
@@ -111,12 +119,13 @@ describe("hostile probe targets", () => {
   let url: string;
   let status = 403;
   let lastToken: string | undefined;
+  let body: string | undefined;
   beforeAll(async () => {
     server = createServer((req, res) => {
       if (req.url?.startsWith("/admin")) {
         lastToken = req.headers["x-shopify-access-token"] as string;
         res.writeHead(status, { "content-type": "application/json" });
-        return res.end(status === 200 ? '{"data":{"shop":{"id":"1"}}}' : '{"errors":"x"}');
+        return res.end(body ?? (status === 200 ? '{"data":{"shop":{"id":"1"}}}' : '{"errors":"x"}'));
       }
       res.writeHead(302, { location: `http://127.0.0.1:${(other.address() as AddressInfo).port}/login` });
       res.end();
@@ -168,7 +177,19 @@ describe("hostile probe targets", () => {
   });
   it("is inconclusive on a bad token", async () => {
     status = 401;
-    expect((await verify()).status).toBe("skip");
+    expect((await verify()).status).toBe("info");
+  });
+  it("doesn't credit the allowlist when Shopify rejects the token", async () => {
+    status = 403;
+    body = '{"errors":"Non-expiring access tokens are no longer accepted"}';
+    expect((await verify()).status).toBe("info");
+    body = undefined;
+  });
+  it("doesn't fail on a 2xx without shop data", async () => {
+    status = 200;
+    body = "";
+    expect((await verify()).status).toBe("info");
+    body = undefined;
   });
   it("only sends tokens to myshopify.com domains", async () => {
     await expect(

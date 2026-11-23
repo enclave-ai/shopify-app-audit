@@ -223,6 +223,7 @@ export async function probeHeaders(options: ProbeOptions): Promise<Finding[]> {
         status: "skip",
         message: `${url} redirected to ${new URL(res.finalUrl).origin}, so its headers aren't the app's. Pass the embedded app's page with --app-path.`,
       },
+      ...(await probePlaintext(options)),
     ];
   }
   if (res.error || res.status >= 400) {
@@ -233,6 +234,7 @@ export async function probeHeaders(options: ProbeOptions): Promise<Finding[]> {
         status: "skip",
         message: `${url} returned ${describe(res)}. Pass the embedded app's page with --app-path.`,
       },
+      ...(await probePlaintext(options)),
     ];
   }
   const findings: Finding[] = [];
@@ -277,6 +279,12 @@ export async function probeHeaders(options: ProbeOptions): Promise<Finding[]> {
     });
   }
 
+  findings.push(...(await probePlaintext(options)));
+  return findings;
+}
+
+async function probePlaintext(options: ProbeOptions): Promise<Finding[]> {
+  const findings: Finding[] = [];
   const target = new URL(options.target);
   if (target.protocol === "https:") {
     const plain = new URL(options.target);

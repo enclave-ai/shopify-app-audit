@@ -25,6 +25,13 @@ export async function verifyIpAllowlist(options: IpAllowlistOptions): Promise<Fi
     timeoutMs: options.timeoutMs,
   });
   const base = { id: "IP_ALLOWLIST", title: "IP allowlist", docs: DOCS } as const;
+  if (res.status === 403 && /access token|expir/i.test(res.body)) {
+    return {
+      ...base,
+      status: "info",
+      message: `Shopify rejected the token itself (403), not the IP, so the allowlist couldn't be tested. Use a current expiring access token for this shop.`,
+    };
+  }
   if (res.status === 403) {
     return {
       ...base,
@@ -32,7 +39,7 @@ export async function verifyIpAllowlist(options: IpAllowlistOptions): Promise<Fi
       message: `Shopify rejected the app's token from this machine with 403, so an IP allowlist is enforced. This only proves it if this machine is outside your allowed ranges.`,
     };
   }
-  if (res.status >= 200 && res.status < 300 && !/"errors"/.test(res.body)) {
+  if (res.status >= 200 && res.status < 300 && /"shop"\s*:\s*\{\s*"id"/.test(res.body)) {
     return {
       ...base,
       status: options.distribution === "public" ? "fail" : "warn",
@@ -43,10 +50,10 @@ export async function verifyIpAllowlist(options: IpAllowlistOptions): Promise<Fi
   }
   return {
     ...base,
-    status: "skip",
+    status: "info",
     message:
       res.status === 401
         ? "Shopify rejected the token itself (401), so the allowlist couldn't be tested. Use a current access token for this shop."
-        : `Couldn't test the allowlist: ${res.error ? `request failed: ${res.error}` : `HTTP ${res.status}`}.`,
+        : `Couldn't test the allowlist: ${res.error ? `request failed: ${res.error}` : `HTTP ${res.status}`}. Check it by hand in the Dev Dashboard.`,
   };
 }

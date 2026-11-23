@@ -93,7 +93,7 @@ async function main() {
   if (!["text", "json", "markdown", "sarif"].includes(values.format!)) fail("--format must be text, json, markdown or sarif");
   if (!["fail", "warn", "none"].includes(values["fail-on"]!)) fail("--fail-on must be fail, warn or none");
   const today = values.today ?? new Date().toISOString().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(today) || Number.isNaN(Date.parse(today))) fail("--today must be YYYY-MM-DD");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today) || Number.isNaN(Date.parse(today)) || new Date(Date.parse(today)).toISOString().slice(0, 10) !== today) fail("--today must be YYYY-MM-DD");
   const timeoutMs = Number(values.timeout);
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) fail("--timeout must be a positive number of milliseconds");
   const shop = values.shop!.toLowerCase();
