@@ -15,7 +15,17 @@ It reads your app's code and `shopify.app.toml`, then lists what will break and 
 - "You're on non-expiring tokens. You get delisted Jan 1, and API calls fail from Apr 1."
 - "You use ScriptTags. They stop loading Mar 1."
 
-Every item comes with the exact file and line and how to fix it.
+Deadlines that have already passed show as **enforced**, not as countdowns. Every item comes with the exact file and line and how to fix it.
+
+### Already enforced: prove your IP allowlist works
+
+Since November 20, 2026, public apps without an IP allowlist are delisted. It can't be seen in code, so give the tool an Admin API token for a dev store and run it from your laptop or CI, outside your servers' IP ranges:
+
+```bash
+SHOPIFY_ADMIN_TOKEN=shpat_... npx shopify-app-audit --shop my-dev-store.myshopify.com --admin-token-env SHOPIFY_ADMIN_TOKEN
+```
+
+It sends one `{ shop { id } }` Admin API query. A `403` from Shopify means the allowlist is enforced. If the query succeeds, the token works from anywhere and the check fails. This is the check Shopify's docs recommend. The token is only ever sent to `https://<shop>.myshopify.com`.
 
 ## 2. "Can my live app be hacked?"
 
@@ -86,6 +96,8 @@ Run the server with `SECURE=1` to see every probe pass.
 --fail-on fail|warn|none         Exit code policy (default: fail)
 --today YYYY-MM-DD               Evaluate deadlines as of a date
 --client-secret-env <name>       Also send one correctly signed webhook
+--shop <domain>                  Your dev store, for --admin-token-env and probe requests
+--admin-token-env <name>         Verify the IP allowlist with one Admin API request (expects 403)
 ```
 
 ## GitHub Action
@@ -103,7 +115,7 @@ It writes a job summary and a SARIF file for code scanning. See [examples/github
 
 Passing this tool doesn't mean your app is secure. The static checks match patterns, so they miss things and sometimes flag safe code. The probe only tests a few unauthenticated requests. It can't log in as two merchants and test whether one store can read another's data, which is the cross-shop IDOR Shopify ranks among the top risks.
 
-[Enclave](https://enclave.ai) does that: an AI pentester that signs in as real users and tests every route for tenant isolation, auth bypass and injection.
+[Enclave](https://enclave.ai) does that: an AI pentester that signs in as real users and tests every route for tenant isolation, auth bypass and injection. You can also [get a free AI vulnerability scan of your app's repo](https://app.enclave.ai/login?utm_source=shopify-app-audit&utm_medium=readme&utm_campaign=shopify-app-audit). Nothing in this tool needs it.
 
 ## Contributing
 

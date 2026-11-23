@@ -92,6 +92,22 @@ export const DEADLINES: Deadline[] = [
     source: "https://shopify.dev/changelog/posts/abandonedcheckouturl-now-requires-level-2-protected-customer-data-access",
   },
   {
+    id: "ip-allowlist-merchant-warning",
+    date: "2027-01-15",
+    scope: ["public"],
+    feature: "IP allowlist (merchant warning)",
+    consequence: "Merchants using an app without an IP allowlist see a warning in the Shopify admin.",
+    source: HUB,
+  },
+  {
+    id: "expiring-tokens-merchant-warning",
+    date: "2027-01-15",
+    scope: ["public"],
+    feature: "Expiring offline access tokens (merchant warning)",
+    consequence: "Merchants using an app on non-expiring offline tokens see a warning in the Shopify admin.",
+    source: HUB,
+  },
+  {
     id: "script-tags-off",
     date: "2027-03-01",
     scope: ["public", "custom"],
@@ -122,6 +138,15 @@ export function deadlineById(id: string | undefined): Deadline | undefined {
 export function daysUntil(date: string, today: string): number {
   const ms = Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`);
   return Math.round(ms / 86_400_000);
+}
+
+export const isInEffect = (date: string, today: string): boolean => daysUntil(date, today) <= 0;
+
+export function deadlinePhrase(date: string, today: string): string {
+  const days = daysUntil(date, today);
+  if (days < 0) return `in effect since ${date}`;
+  if (days === 0) return `takes effect today (${date})`;
+  return `${date} (in ${days} day${days === 1 ? "" : "s"})`;
 }
 
 export function relativeDay(date: string, today: string): string {

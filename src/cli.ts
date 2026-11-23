@@ -6,10 +6,13 @@ import { loadProject } from "./config.js";
 import { deadlinesFor } from "./deadlines.js";
 import { runStaticChecks } from "./static/checks.js";
 import { runProbe } from "./probe/checks.js";
+import { SHOP_DOMAIN_RE, verifyIpAllowlist } from "./probe/ip-allowlist.js";
+import { oldestSupportedVersion } from "./api-versions.js";
 import { toBadge, toJson, toMarkdown, toSarif, toText } from "./report/format.js";
 import type { Distribution, Finding, Report } from "./types.js";
 
 const VERSION = "0.1.0";
+const DEFAULT_SHOP = "shopify-app-audit-probe.myshopify.com";
 
 const HELP = `shopify-app-audit ${VERSION}
 
@@ -39,6 +42,10 @@ Probe options
   --client-secret-env <name>      Env var holding the client secret, to also send one correctly signed webhook
   --timeout <ms>                  Per-request timeout (default: 10000)
 
+IP allowlist check (any command)
+  --admin-token-env <name>        Env var holding an Admin API access token for --shop. Calls the
+                                  Admin API from this machine and passes only if Shopify returns 403
+
 Only probe apps you own or have permission to test.
 `;
 
@@ -62,8 +69,9 @@ async function main() {
       "webhook-path": { type: "string", multiple: true },
       "proxy-path": { type: "string", multiple: true },
       "app-path": { type: "string", multiple: true },
-      shop: { type: "string", default: "shopify-app-audit-probe.myshopify.com" },
+      shop: { type: "string", default: DEFAULT_SHOP },
       "client-secret-env": { type: "string" },
+      "admin-token-env": { type: "string" },
       timeout: { type: "string", default: "10000" },
       help: { type: "boolean", short: "h" },
       version: { type: "boolean", short: "v" },
@@ -85,7 +93,15 @@ async function main() {
   if (!["text", "json", "markdown", "sarif"].includes(values.format!)) fail("--format must be text, json, markdown or sarif");
   if (!["fail", "warn", "none"].includes(values["fail-on"]!)) fail("--fail-on must be fail, warn or none");
   const today = values.today ?? new Date().toISOString().slice(0, 10);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) fail("--today must be YYYY-MM-DD");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today) || Number.isNaN(Date.parse(today))) fail("--today must be YYYY-MM-DD");
+  const timeoutMs = Number(values.timeout);
+  if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) fail("--timeout must be a positive number of milliseconds");
+  const shop = values.shop!.toLowerCase();
+  if (!SHOP_DOMAIN_RE.test(shop)) fail("--shop must be a *.myshopify.com domain");
+  const tokenEnv = values["admin-token-env"];
+  const adminToken = tokenEnv ? process.env[tokenEnv] : undefined;
+  if (tokenEnv && !adminToken) fail(`--admin-token-env ${tokenEnv} is not set`);
+  if (adminToken && values.shop === DEFAULT_SHOP) fail("--admin-token-env needs --shop set to the store the token belongs to");
 
   const project = await loadProject(dir, values.config);
   const findings: Finding[] = [];
@@ -97,11 +113,13 @@ async function main() {
   if (command === "probe" || command === "all") {
     target = values.url ?? project.config?.applicationUrl;
     if (!target) fail("probe needs --url (or application_url in shopify.app.toml)");
+    let parsed: URL | undefined;
     try {
-      new URL(target);
+      parsed = new URL(target);
     } catch {
       fail(`--url is not a valid URL: ${target}`);
     }
+    if (!/^https?:$/.test(parsed.protocol)) fail("--url must be an http or https URL");
     const webhookPaths =
       values["webhook-path"] ??
       [...new Set((project.config?.webhooks ?? []).map((w) => toPath(w.uri)).filter((p): p is string => Boolean(p)))];
@@ -114,12 +132,25 @@ async function main() {
         webhookPaths: webhookPaths.length ? webhookPaths : ["/webhooks"],
         proxyPaths,
         appPaths: values["app-path"] ?? ["/app"],
-        shop: values.shop!,
+        shop,
         otherShop: "shopify-app-audit-other.myshopify.com",
         clientSecret: secretEnv ? process.env[secretEnv] : undefined,
-        timeoutMs: Number(values.timeout),
+        timeoutMs,
       })),
     );
+  }
+
+  if (adminToken) {
+    const verified = await verifyIpAllowlist({
+      shop,
+      accessToken: adminToken,
+      apiVersion: oldestSupportedVersion(today),
+      distribution,
+      timeoutMs,
+    });
+    const manual = findings.findIndex((f) => f.id === "IP_ALLOWLIST");
+    if (manual >= 0) findings.splice(manual, 1, verified);
+    else findings.push(verified);
   }
 
   const report: Report = {

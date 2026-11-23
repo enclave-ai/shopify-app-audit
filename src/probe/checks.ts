@@ -215,6 +215,16 @@ export async function probeShopParameter(options: ProbeOptions): Promise<Finding
 export async function probeHeaders(options: ProbeOptions): Promise<Finding[]> {
   const url = joinUrl(options.target, options.appPaths[0] ?? "/", `shop=${encodeURIComponent(options.shop)}&embedded=1`);
   const res = await request(url, { timeoutMs: options.timeoutMs, followRedirects: true });
+  if (!res.error && new URL(res.finalUrl).origin !== new URL(url).origin) {
+    return [
+      {
+        id: "FRAME_ANCESTORS",
+        title: "Response headers",
+        status: "skip",
+        message: `${url} redirected to ${new URL(res.finalUrl).origin}, so its headers aren't the app's. Pass the embedded app's page with --app-path.`,
+      },
+    ];
+  }
   if (res.error || res.status >= 400) {
     return [
       {

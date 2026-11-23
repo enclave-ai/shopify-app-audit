@@ -438,12 +438,13 @@ export const checkManual: Check = async (ctx) => {
       title: "IP allowlist",
       status: "info",
       manual: true,
-      message:
+      message: `${
         ctx.distribution === "public"
-          ? "Can't be checked from code. Public apps without an IP allowlist are delisted and blocked from new installs."
-          : "Can't be checked from code. Custom apps need one before installing outside your organization, and every installed app needs one from January 1, 2027.",
-      fix: "Dev Dashboard > your app > Settings > IP allowlist. Prefer exact IPs over ASNs.",
-      docs: "https://shopify.dev/docs/apps/build/security",
+          ? "Required now: public apps without an IP allowlist are delisted and blocked from new installs."
+          : "Required now to install a custom app outside your organization, and for every installed app from January 1, 2027."
+      } Verify it with --shop <your-dev-store>.myshopify.com --admin-token-env <VAR>, which calls the Admin API from this machine and expects a 403.`,
+      fix: "Dev Dashboard > your app > Settings > IP allowlist. List your servers' egress IPs (NAT gateway), or your host's ASNs if they change.",
+      docs: "https://shopify.dev/docs/apps/build/security/credentials-and-data/restrict-api-access-to-your-ip-addresses",
       deadlineId: ctx.distribution === "public" ? "ip-allowlist-public" : "ip-allowlist-custom-new",
     },
     {
@@ -451,7 +452,7 @@ export const checkManual: Check = async (ctx) => {
       title: "MFA on every account that can change the app",
       status: "info",
       manual: true,
-      message: "Can't be checked from code. Required on partner accounts. Also cover hosting, CDN, code repos and email.",
+      message: "Required now on partner accounts, and can't be checked from code. Also cover hosting, CDN, code repos and email.",
       fix: "Use passkeys where supported, MFA elsewhere, and remove people who left.",
       docs: DOCS.mfa,
       deadlineId: "partner-mfa",

@@ -1,5 +1,7 @@
 import pc from "picocolors";
-import { daysUntil, deadlineById, relativeDay } from "../deadlines.js";
+import { daysUntil, deadlineById, deadlinePhrase, relativeDay } from "../deadlines.js";
+
+export const ENCLAVE_SCAN_URL = "https://app.enclave.ai/login?utm_source=shopify-app-audit&utm_campaign=shopify-app-audit";
 import type { Finding, Report, Status } from "../types.js";
 
 const ORDER: Status[] = ["fail", "warn", "info", "pass", "skip"];
@@ -26,8 +28,8 @@ export function toText(report: Report): string {
   out.push(pc.bold("Shopify security deadlines"));
   for (const d of report.deadlines) {
     const days = daysUntil(d.date, report.today);
-    const when = relativeDay(d.date, report.today);
-    const mark = days < 0 ? pc.dim("past ") : days <= 14 ? pc.red("soon ") : pc.dim("     ");
+    const when = days <= 0 ? "in effect" : relativeDay(d.date, report.today);
+    const mark = days <= 0 ? pc.red("now  ") : days <= 14 ? pc.yellow("soon ") : pc.dim("     ");
     out.push(`  ${mark}${d.date}  ${pc.dim(when.padEnd(13))} ${d.feature}`);
   }
   out.push("");
@@ -36,7 +38,8 @@ export function toText(report: Report): string {
     out.push(`      ${f.message}`);
     const deadline = deadlineById(f.deadlineId);
     if (deadline && f.status !== "pass") {
-      out.push(`      ${pc.dim("deadline:")} ${deadline.date} (${relativeDay(deadline.date, report.today)}). ${deadline.consequence}`);
+      const label = daysUntil(deadline.date, report.today) <= 0 ? "enforced:" : "deadline:";
+      out.push(`      ${pc.dim(label)} ${deadlinePhrase(deadline.date, report.today)}. ${deadline.consequence}`);
     }
     for (const d of f.details ?? []) out.push(`      ${pc.dim("-")} ${d}`);
     const locations = loc(f);
@@ -54,7 +57,8 @@ export function toText(report: Report): string {
       "Static checks read your code and config. The probe sends a few requests to the URL you give it. Neither proves the app is secure.",
     ),
   );
-  out.push(pc.dim("Made by Enclave. AI pentesting for your whole app: https://enclave.ai"));
+  out.push("");
+  out.push(`Want a deeper look? Get a free AI vulnerability scan of your app's repo from Enclave: ${ENCLAVE_SCAN_URL}&utm_medium=cli`);
   return out.join("\n");
 }
 
@@ -73,7 +77,7 @@ export function toMarkdown(report: Report): string {
     out.push("| --- | --- | --- | --- |");
     for (const f of open) {
       const d = deadlineById(f.deadlineId);
-      const deadline = d && f.status !== "pass" ? `${d.date} (${relativeDay(d.date, report.today)})` : "";
+      const deadline = d && f.status !== "pass" ? deadlinePhrase(d.date, report.today) : "";
       const details = (f.details ?? []).slice(0, 8).map((x) => `<br>- ${md(x)}`).join("");
       out.push(`| ${LABEL[f.status]} | **${md(f.title)}**<br>${md(f.message)}${details} | ${deadline} | ${md(loc(f).slice(0, 3).join(", "))} |`);
     }
@@ -83,11 +87,16 @@ export function toMarkdown(report: Report): string {
   out.push("");
   out.push("| Date | Feature | What happens |");
   out.push("| --- | --- | --- |");
-  for (const d of report.deadlines) out.push(`| ${d.date} | ${md(d.feature)} | ${md(d.consequence)} [source](${d.source}) |`);
+  for (const d of report.deadlines) {
+    const when = daysUntil(d.date, report.today) <= 0 ? `${d.date} (in effect)` : d.date;
+    out.push(`| ${when} | ${md(d.feature)} | ${md(d.consequence)} [source](${d.source}) |`);
+  }
   out.push("");
   out.push("</details>");
   out.push("");
-  out.push("_Made by [Enclave](https://enclave.ai). Static checks and a light probe don't prove an app is secure._");
+  out.push(`Want a deeper look? Get a [free AI vulnerability scan](${ENCLAVE_SCAN_URL}&utm_medium=github-summary) of your app's repo from Enclave.`);
+  out.push("");
+  out.push("_Static checks and a light probe don't prove an app is secure._");
   return out.join("\n");
 }
 

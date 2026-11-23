@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { parse } from "smol-toml";
@@ -104,23 +104,47 @@ const IGNORE = [
 
 export const CODE_GLOB = "**/*.{js,jsx,ts,tsx,mjs,cjs,rb,py,php,go,liquid,css,scss,graphql,gql,erb,prisma}";
 
+export const MAX_FILE_BYTES = 2 * 1024 * 1024;
+
+async function readInside(root: string, file: string): Promise<string> {
+  const real = await realpath(path.resolve(root, file));
+  const realRoot = await realpath(root);
+  if (real !== realRoot && !real.startsWith(realRoot + path.sep)) {
+    throw new Error(`${file} points outside the app directory`);
+  }
+  if ((await stat(real)).size > MAX_FILE_BYTES) throw new Error(`${file} is larger than ${MAX_FILE_BYTES} bytes`);
+  return readFile(real, "utf8");
+}
+
+function tomlError(file: string, err: unknown): Error {
+  const first = (err instanceof Error ? err.message : String(err)).split("\n")[0];
+  return new Error(`Can't parse ${file}: ${first}`);
+}
+
 export async function loadProject(dir: string, configName?: string): Promise<AppProject> {
   const abs = path.resolve(dir);
   const candidates = configName
     ? [configName]
-    : (await glob(["shopify.app.toml", "shopify.app.*.toml"], { cwd: abs })).sort((a, b) =>
+    : (await glob(["shopify.app.toml", "shopify.app.*.toml"], { cwd: abs, followSymbolicLinks: false })).sort((a, b) =>
         a === "shopify.app.toml" ? -1 : b === "shopify.app.toml" ? 1 : a.localeCompare(b),
       );
   let config: AppConfig | undefined;
   const first = candidates.find((c) => existsSync(path.resolve(abs, c)));
   if (first) {
-    const raw = await readFile(path.resolve(abs, first), "utf8");
-    config = parseAppConfig(path.relative(abs, path.resolve(abs, first)), raw);
+    const rel = path.relative(abs, path.resolve(abs, first));
+    const raw = configName && path.isAbsolute(configName)
+      ? await readFile(configName, "utf8")
+      : await readInside(abs, first);
+    try {
+      config = parseAppConfig(rel, raw);
+    } catch (err) {
+      throw tomlError(rel, err);
+    }
   }
-  const extConfigs = await glob(["extensions/*/shopify.extension.toml"], { cwd: abs });
+  const extConfigs = await glob(["extensions/*/shopify.extension.toml"], { cwd: abs, followSymbolicLinks: false });
   const extensions: Extension[] = [];
   for (const file of extConfigs.sort()) {
-    const raw = await readFile(path.join(abs, file), "utf8");
+    const raw = await readInside(abs, file).catch(() => "");
     let types: string[] = [];
     try {
       const doc = asTable(parse(raw));
@@ -134,10 +158,10 @@ export async function loadProject(dir: string, configName?: string): Promise<App
     }
     extensions.push({ dir: path.dirname(file), configFile: file, types });
   }
-  const files = (await glob([CODE_GLOB], { cwd: abs, ignore: IGNORE, dot: false })).sort();
+  const files = (await glob([CODE_GLOB], { cwd: abs, ignore: IGNORE, dot: false, followSymbolicLinks: false })).sort();
   return { dir: abs, config, extensions, files };
 }
 
 export async function readProjectFile(project: AppProject, file: string): Promise<string> {
-  return readFile(path.join(project.dir, file), "utf8");
+  return readInside(project.dir, file);
 }
