@@ -1,15 +1,17 @@
 # shopify-app-audit
 
-[![Reviewed by Enclave](https://img.shields.io/badge/reviewed%20by-Enclave-111111?style=flat-square&labelColor=111111&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTI2IiBoZWlnaHQ9IjEyNiIgdmlld0JveD0iMTYgMTggMTI2IDEyNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBzdHJva2U9Im5vbmUiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0ibm9uemVybyI%2BPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE2LCAtMjIpIj48cGF0aCBkPSJNMTMzLjcsNDQuMSBDMTM3LjQsNDYuNiAxMzguNCw1MS41IDEzNi4wLDU1LjIgQzEyNy4yLDY4LjYgMTEyLjMsNzYuOCA5Niw3Ni44IEM3OS42LDc2LjggNjQuNyw2OC42IDU1LjksNTUuMiBDNTMuNSw1MS41IDU0LjUsNDYuNiA1OC4yLDQ0LjEgQzYxLjksNDEuNyA2Ni44LDQyLjcgNjkuMyw0Ni40IEM3NS4xLDU1LjQgODUuMSw2MC45IDk2LDYwLjkgQzEwNi44LDYwLjkgMTE2LjgsNTUuNCAxMjIuNiw0Ni40IEMxMjUuMSw0Mi43IDEzMC4wLDQxLjcgMTMzLjcsNDQuMSBaIiBmaWxsPSIjZmZmIj48L3BhdGg%2BPHBhdGggZD0iTTEzNS42LDU1LjggQzEyOC45LDY0LjIgMTI2LjgsNzUuNCAxMzAuMSw4NS44IEMxMzMuNSw5Ni4wIDE0MS41LDEwMy43IDE1MS42LDEwNi42IEwxNTIuMSwxMDYuOCBDMTU2LjMsMTA3LjkgMTU4LjgsMTEyLjMgMTU3LjcsMTE2LjYgQzE1Ni41LDEyMC45IDE1Mi4xLDEyMy4zIDE0Ny44LDEyMi4yIEMxMzIuNCwxMTcuOSAxMjAuMCwxMDYuMiAxMTQuOSw5MC43IEMxMDkuOSw3NS4xIDExMy4xLDU4LjQgMTIzLjEsNDUuOSBDMTI1LjgsNDIuNCAxMzAuOCw0MS44IDEzNC4zLDQ0LjYgQzEzNy43LDQ3LjMgMTM4LjMsNTIuMSAxMzUuNyw1NS42IEwxMzUuNiw1NS44IFoiIGZpbGw9IiNmZmYiPjwvcGF0aD48cGF0aCBkPSJNOTYuMywxNjEuOCBDOTEuOSwxNjIuMCA4OC4yLDE1OC42IDg4LjAsMTU0LjIgQzg3LjMsMTM4LjIgOTQuNSwxMjIuNyAxMDcuNywxMTMuMSBDMTIwLjksMTAzLjUgMTM3LjgsMTAxLjQgMTUyLjgsMTA3LjAgQzE1Ni45LDEwOC42IDE1OS4wLDExMy4yIDE1Ny40LDExNy4zIEMxNTUuOSwxMjEuMyAxNTEuNCwxMjMuNCAxNDcuNCwxMjIuMCBMMTQ3LjEsMTIyLjAgQzEzNy4xLDExOC4yIDEyNS45LDExOS42IDExNy4xLDEyNi4wIEMxMDguNCwxMzIuMyAxMDMuNiwxNDIuNCAxMDMuOSwxNTMuMCBMMTAzLjksMTUzLjUgQzEwNC4xLDE1Ny45IDEwMC43LDE2MS42IDk2LjMsMTYxLjggWiIgZmlsbD0iI2ZmZiI%2BPC9wYXRoPjxwYXRoIGQ9Ik04OC4wLDE1My41IEM4OC40LDE0Mi43IDgzLjYsMTMyLjQgNzQuOCwxMjYuMCBDNjYuMiwxMTkuNyA1NS4xLDExOC4yIDQ1LjIsMTIxLjggTDQ0LjgsMTIyLjAgQzQwLjYsMTIzLjUgMzYuMCwxMjEuNCAzNC41LDExNy4zIEMzMi45LDExMy4yIDM1LjAsMTA4LjYgMzkuMSwxMDcuMCBDNTQuMSwxMDEuNCA3MS4wLDEwMy41IDg0LjIsMTEzLjEgQzk3LjQsMTIyLjcgMTA0LjYsMTM4LjIgMTAzLjksMTU0LjIgQzEwMy43LDE1OC42IDEwMC4wLDE2Mi4wIDk1LjYsMTYxLjggQzkxLjMsMTYxLjYgODcuOSwxNTguMCA4OC4wLDE1My43IEw4OC4wLDE1My41IFoiIGZpbGw9IiNmZmYiPjwvcGF0aD48cGF0aCBkPSJNNTcuNiw0NC42IEM2MS4xLDQxLjggNjYuMSw0Mi40IDY4LjgsNDUuOSBDNzguOCw1OC40IDgyLjAsNzUuMSA3Ny4wLDkwLjcgQzcxLjksMTA2LjIgNTkuNSwxMTcuOSA0NC4xLDEyMi4yIEMzOS44LDEyMy4zIDM1LjQsMTIwLjkgMzQuMiwxMTYuNiBDMzMuMSwxMTIuNCAzNS41LDEwOC4xIDM5LjYsMTA2LjggTDM5LjgsMTA2LjggQzUwLjEsMTAzLjkgNTguNCw5Ni4xIDYxLjgsODUuOCBDNjUuMSw3NS41IDYzLjEsNjQuNSA1Ni42LDU2LjIgTDU2LjMsNTUuOCBDNTMuNiw1Mi4zIDU0LjEsNDcuMyA1Ny42LDQ0LjYgWiIgZmlsbD0iI2ZmZiI%2BPC9wYXRoPjwvZz48L2c%2BPC9zdmc%2B)](https://enclave.ai/?utm_source=github&utm_medium=readme_badge)
+[![npm](https://img.shields.io/npm/v/shopify-app-audit?style=flat-square&color=cb3837&logo=npm)](https://www.npmjs.com/package/shopify-app-audit) [![CI](https://img.shields.io/github/actions/workflow/status/enclave-ai/shopify-app-audit/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/enclave-ai/shopify-app-audit/actions/workflows/ci.yml) [![License: MIT](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE) [![Node >=20](https://img.shields.io/badge/node-%3E%3D20-339933?style=flat-square&logo=nodedotjs&logoColor=white)](package.json) [![Reviewed by Enclave](https://img.shields.io/badge/reviewed%20by-Enclave-111111?style=flat-square&labelColor=111111&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyB3aWR0aD0iMTI2IiBoZWlnaHQ9IjEyNiIgdmlld0JveD0iMTYgMTggMTI2IDEyNiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBzdHJva2U9Im5vbmUiIGZpbGw9Im5vbmUiIGZpbGwtcnVsZT0ibm9uemVybyI%2BPGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE2LCAtMjIpIj48cGF0aCBkPSJNMTMzLjcsNDQuMSBDMTM3LjQsNDYuNiAxMzguNCw1MS41IDEzNi4wLDU1LjIgQzEyNy4yLDY4LjYgMTEyLjMsNzYuOCA5Niw3Ni44IEM3OS42LDc2LjggNjQuNyw2OC42IDU1LjksNTUuMiBDNTMuNSw1MS41IDU0LjUsNDYuNiA1OC4yLDQ0LjEgQzYxLjksNDEuNyA2Ni44LDQyLjcgNjkuMyw0Ni40IEM3NS4xLDU1LjQgODUuMSw2MC45IDk2LDYwLjkgQzEwNi44LDYwLjkgMTE2LjgsNTUuNCAxMjIuNiw0Ni40IEMxMjUuMSw0Mi43IDEzMC4wLDQxLjcgMTMzLjcsNDQuMSBaIiBmaWxsPSIjZmZmIj48L3BhdGg%2BPHBhdGggZD0iTTEzNS42LDU1LjggQzEyOC45LDY0LjIgMTI2LjgsNzUuNCAxMzAuMSw4NS44IEMxMzMuNSw5Ni4wIDE0MS41LDEwMy43IDE1MS42LDEwNi42IEwxNTIuMSwxMDYuOCBDMTU2LjMsMTA3LjkgMTU4LjgsMTEyLjMgMTU3LjcsMTE2LjYgQzE1Ni41LDEyMC45IDE1Mi4xLDEyMy4zIDE0Ny44LDEyMi4yIEMxMzIuNCwxMTcuOSAxMjAuMCwxMDYuMiAxMTQuOSw5MC43IEMxMDkuOSw3NS4xIDExMy4xLDU4LjQgMTIzLjEsNDUuOSBDMTI1LjgsNDIuNCAxMzAuOCw0MS44IDEzNC4zLDQ0LjYgQzEzNy43LDQ3LjMgMTM4LjMsNTIuMSAxMzUuNyw1NS42IEwxMzUuNiw1NS44IFoiIGZpbGw9IiNmZmYiPjwvcGF0aD48cGF0aCBkPSJNOTYuMywxNjEuOCBDOTEuOSwxNjIuMCA4OC4yLDE1OC42IDg4LjAsMTU0LjIgQzg3LjMsMTM4LjIgOTQuNSwxMjIuNyAxMDcuNywxMTMuMSBDMTIwLjksMTAzLjUgMTM3LjgsMTAxLjQgMTUyLjgsMTA3LjAgQzE1Ni45LDEwOC42IDE1OS4wLDExMy4yIDE1Ny40LDExNy4zIEMxNTUuOSwxMjEuMyAxNTEuNCwxMjMuNCAxNDcuNCwxMjIuMCBMMTQ3LjEsMTIyLjAgQzEzNy4xLDExOC4yIDEyNS45LDExOS42IDExNy4xLDEyNi4wIEMxMDguNCwxMzIuMyAxMDMuNiwxNDIuNCAxMDMuOSwxNTMuMCBMMTAzLjksMTUzLjUgQzEwNC4xLDE1Ny45IDEwMC43LDE2MS42IDk2LjMsMTYxLjggWiIgZmlsbD0iI2ZmZiI%2BPC9wYXRoPjxwYXRoIGQ9Ik04OC4wLDE1My41IEM4OC40LDE0Mi43IDgzLjYsMTMyLjQgNzQuOCwxMjYuMCBDNjYuMiwxMTkuNyA1NS4xLDExOC4yIDQ1LjIsMTIxLjggTDQ0LjgsMTIyLjAgQzQwLjYsMTIzLjUgMzYuMCwxMjEuNCAzNC41LDExNy4zIEMzMi45LDExMy4yIDM1LjAsMTA4LjYgMzkuMSwxMDcuMCBDNTQuMSwxMDEuNCA3MS4wLDEwMy41IDg0LjIsMTEzLjEgQzk3LjQsMTIyLjcgMTA0LjYsMTM4LjIgMTAzLjksMTU0LjIgQzEwMy43LDE1OC42IDEwMC4wLDE2Mi4wIDk1LjYsMTYxLjggQzkxLjMsMTYxLjYgODcuOSwxNTguMCA4OC4wLDE1My43IEw4OC4wLDE1My41IFoiIGZpbGw9IiNmZmYiPjwvcGF0aD48cGF0aCBkPSJNNTcuNiw0NC42IEM2MS4xLDQxLjggNjYuMSw0Mi40IDY4LjgsNDUuOSBDNzguOCw1OC40IDgyLjAsNzUuMSA3Ny4wLDkwLjcgQzcxLjksMTA2LjIgNTkuNSwxMTcuOSA0NC4xLDEyMi4yIEMzOS44LDEyMy4zIDM1LjQsMTIwLjkgMzQuMiwxMTYuNiBDMzMuMSwxMTIuNCAzNS41LDEwOC4xIDM5LjYsMTA2LjggTDM5LjgsMTA2LjggQzUwLjEsMTAzLjkgNTguNCw5Ni4xIDYxLjgsODUuOCBDNjUuMSw3NS41IDYzLjEsNjQuNSA1Ni42LDU2LjIgTDU2LjMsNTUuOCBDNTMuNiw1Mi4zIDU0LjEsNDcuMyA1Ny42LDQ0LjYgWiIgZmlsbD0iI2ZmZiI%2BPC9wYXRoPjwvZz48L2c%2BPC9zdmc%2B)](https://enclave.ai/?utm_source=github&utm_medium=readme_badge)
 
 **One command that tells you whether Shopify is about to delist your app, and whether your running app can be hacked in the ways Shopify has warned about.**
+
+Shopify's IP allowlist deadline passed on Nov 20, 2026. Network access declarations are due Dec 1, and apps on non-expiring tokens get delisted Jan 1. Find out which ones your app misses:
 
 ```bash
 npx shopify-app-audit                                       # Will Shopify block my app?
 npx shopify-app-audit probe --url https://staging.myapp.com # Can my live app be hacked?
 ```
 
-No signup, no config. It runs on your repo in a few seconds:
+No signup, no config, no API key. The repo audit runs locally and never uploads your code. Code can't show whether your IP allowlist is on, so it's listed as a to-do; to check it for real, add your app's Admin API token for a dev store where it's installed ([how](#already-enforced-prove-your-ip-allowlist-works)).
 
 ```text
 shopify-app-audit 0.2.0 · public app · 2026-11-23
@@ -33,6 +35,51 @@ Next
   → Fix the blocking items above, then run this again.
   → Test the running app:  npx shopify-app-audit probe --url https://staging.your-app.com
 ```
+
+## Let your coding agent fix it
+
+![Claude Code](https://img.shields.io/badge/Claude%20Code-D97757?style=for-the-badge&logo=claude&logoColor=white) ![Codex](https://img.shields.io/badge/Codex-000000?style=for-the-badge&logo=data%3Aimage%2Fsvg%2Bxml%3Bbase64%2CPHN2ZyBmaWxsPSJ3aGl0ZSIgcm9sZT0iaW1nIiB2aWV3Qm94PSIwIDAgMjQgMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI%2BPHRpdGxlPk9wZW5BSTwvdGl0bGU%2BPHBhdGggZD0iTTIyLjI4MTkgOS44MjExYTUuOTg0NyA1Ljk4NDcgMCAwIDAtLjUxNTctNC45MTA4IDYuMDQ2MiA2LjA0NjIgMCAwIDAtNi41MDk4LTIuOUE2LjA2NTEgNi4wNjUxIDAgMCAwIDQuOTgwNyA0LjE4MThhNS45ODQ3IDUuOTg0NyAwIDAgMC0zLjk5NzcgMi45IDYuMDQ2MiA2LjA0NjIgMCAwIDAgLjc0MjcgNy4wOTY2IDUuOTggNS45OCAwIDAgMCAuNTExIDQuOTEwNyA2LjA1MSA2LjA1MSAwIDAgMCA2LjUxNDYgMi45MDAxQTUuOTg0NyA1Ljk4NDcgMCAwIDAgMTMuMjU5OSAyNGE2LjA1NTcgNi4wNTU3IDAgMCAwIDUuNzcxOC00LjIwNTggNS45ODk0IDUuOTg5NCAwIDAgMCAzLjk5NzctMi45MDAxIDYuMDU1NyA2LjA1NTcgMCAwIDAtLjc0NzUtNy4wNzI5em0tOS4wMjIgMTIuNjA4MWE0LjQ3NTUgNC40NzU1IDAgMCAxLTIuODc2NC0xLjA0MDhsLjE0MTktLjA4MDQgNC43NzgzLTIuNzU4MmEuNzk0OC43OTQ4IDAgMCAwIC4zOTI3LS42ODEzdi02LjczNjlsMi4wMiAxLjE2ODZhLjA3MS4wNzEgMCAwIDEgLjAzOC4wNTJ2NS41ODI2YTQuNTA0IDQuNTA0IDAgMCAxLTQuNDk0NSA0LjQ5NDR6bS05LjY2MDctNC4xMjU0YTQuNDcwOCA0LjQ3MDggMCAwIDEtLjUzNDYtMy4wMTM3bC4xNDIuMDg1MiA0Ljc4MyAyLjc1ODJhLjc3MTIuNzcxMiAwIDAgMCAuNzgwNiAwbDUuODQyOC0zLjM2ODV2Mi4zMzI0YS4wODA0LjA4MDQgMCAwIDEtLjAzMzIuMDYxNUw5Ljc0IDE5Ljk1MDJhNC40OTkyIDQuNDk5MiAwIDAgMS02LjE0MDgtMS42NDY0ek0yLjM0MDggNy44OTU2YTQuNDg1IDQuNDg1IDAgMCAxIDIuMzY1NS0xLjk3MjhWMTEuNmEuNzY2NC43NjY0IDAgMCAwIC4zODc5LjY3NjVsNS44MTQ0IDMuMzU0My0yLjAyMDEgMS4xNjg1YS4wNzU3LjA3NTcgMCAwIDEtLjA3MSAwbC00LjgzMDMtMi43ODY1QTQuNTA0IDQuNTA0IDAgMCAxIDIuMzQwOCA3Ljg3MnptMTYuNTk2MyAzLjg1NThMMTMuMTAzOCA4LjM2NCAxNS4xMTkyIDcuMmEuMDc1Ny4wNzU3IDAgMCAxIC4wNzEgMGw0LjgzMDMgMi43OTEzYTQuNDk0NCA0LjQ5NDQgMCAwIDEtLjY3NjUgOC4xMDQydi01LjY3NzJhLjc5Ljc5IDAgMCAwLS40MDctLjY2N3ptMi4wMTA3LTMuMDIzMWwtLjE0Mi0uMDg1Mi00Ljc3MzUtMi43ODE4YS43NzU5Ljc3NTkgMCAwIDAtLjc4NTQgMEw5LjQwOSA5LjIyOTdWNi44OTc0YS4wNjYyLjA2NjIgMCAwIDEgLjAyODQtLjA2MTVsNC44MzAzLTIuNzg2NmE0LjQ5OTIgNC40OTkyIDAgMCAxIDYuNjgwMiA0LjY2ek04LjMwNjUgMTIuODYzbC0yLjAyLTEuMTYzOGEuMDgwNC4wODA0IDAgMCAxLS4wMzgtLjA1NjdWNi4wNzQyYTQuNDk5MiA0LjQ5OTIgMCAwIDEgNy4zNzU3LTMuNDUzN2wtLjE0Mi4wODA1TDguNzA0IDUuNDU5YS43OTQ4Ljc5NDggMCAwIDAtLjM5MjcuNjgxM3ptMS4wOTc2LTIuMzY1NGwyLjYwMi0xLjQ5OTggMi42MDY5IDEuNDk5OHYyLjk5OTRsLTIuNTk3NCAxLjQ5OTctMi42MDY3LTEuNDk5N1oiLz48L3N2Zz4%3D&logoColor=white) ![Cursor](https://img.shields.io/badge/Cursor-000000?style=for-the-badge&logo=cursor&logoColor=white) ![GitHub Copilot](https://img.shields.io/badge/GitHub%20Copilot-24292F?style=for-the-badge&logo=githubcopilot&logoColor=white) ![Gemini CLI](https://img.shields.io/badge/Gemini%20CLI-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white) ![Windsurf](https://img.shields.io/badge/Windsurf-0B100F?style=for-the-badge&logo=windsurf&logoColor=white)
+
+Paste this into your coding agent from your app's repo. It runs the audit, fixes what it safely can, and tells you what's left for you:
+
+```text
+Run `npx shopify-app-audit@latest --format json` in this repo
+(add `--distribution custom` if this is a custom app, not an App Store app).
+
+Work through the findings with status "fail" first, then "warn". Each one has a
+"message", and may have a "fix", "docs" and "locations". The locations are where
+the problem shows up, but the fix may belong elsewhere, e.g. in shopify.app.toml.
+
+Rules:
+- Don't read or change secrets or .env files.
+- Ask me before changing auth, session storage or the database schema.
+  If I haven't approved a change, skip that finding.
+- Re-run the audit until the only "fail" findings left are waiting on me
+  or marked "manual".
+
+Then summarize what you changed, what's waiting on my approval, and every
+"manual" finding I have to handle myself (Dev Dashboard, partner and
+hosting accounts).
+```
+
+## Add it to CI
+
+```yaml
+# .github/workflows/shopify-app-audit.yml
+on: [pull_request]
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: enclave-ai/shopify-app-audit@v0
+        with:
+          distribution: public   # or custom
+          path: .                # folder with shopify.app.toml, if not the repo root
+```
+
+Blocking issues fail the PR, and the findings show up in the job summary. More options are in [GitHub Action](#github-action).
 
 ## 1. "Will Shopify block my app?"
 
@@ -151,5 +198,7 @@ Passing this tool doesn't mean your app is secure. The static checks match patte
 ## Contributing
 
 Shopify updates these requirements often. The deadline calendar is in [`src/deadlines.ts`](src/deadlines.ts), with a source link on every entry. PRs welcome.
+
+If this caught something before Shopify did, star the repo so other app developers find it.
 
 MIT
