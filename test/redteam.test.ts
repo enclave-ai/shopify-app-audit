@@ -118,6 +118,8 @@ describe("passed deadlines", () => {
     expect(toMarkdown(report)).toContain("https://&lt;shop&gt;.myshopify.com");
     report.findings[0].locations = [{ file: "app/a&b.ts", line: 3 }];
     expect(toMarkdown(report)).toContain("<code>app/a&amp;b.ts:3</code>");
+    report.findings[0].locations = [{ file: "app/__init__.ts" }];
+    expect(toMarkdown(report)).toContain("<code>app/&#95;&#95;init&#95;&#95;.ts</code>");
   });
 });
 

@@ -107,6 +107,7 @@ export function toText(report: Report): string {
 
 const md = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+const mdLiteral = (s: string) => md(s).replace(/[_*`~[\]\\]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 function headline(report: Report): string {
   const c = counts(report.findings);
@@ -136,7 +137,7 @@ export function toMarkdown(report: Report): string {
       const d = deadlineById(f.deadlineId);
       if (d) out.push(`  <br>**${daysUntil(d.date, report.today) <= 0 ? "Enforced" : "Deadline"}:** ${deadlinePhrase(d.date, report.today)}. ${md(d.consequence)}`);
       for (const x of (f.details ?? []).slice(0, 8)) out.push(`  <br>· ${md(x)}`);
-      const where = loc(f).slice(0, 3).map((l) => `<code>${md(l)}</code>`).join(", ");
+      const where = loc(f).slice(0, 3).map((l) => `<code>${mdLiteral(l)}</code>`).join(", ");
       const tail = [where, f.fix ? `**Fix:** ${md(f.fix)}` : "", f.docs ? `[docs](${f.docs})` : ""].filter(Boolean).join(" · ");
       if (tail) out.push(`  <br>${tail}`);
     }
