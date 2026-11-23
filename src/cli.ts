@@ -173,8 +173,10 @@ async function main() {
         : values.format === "sarif"
           ? toSarif(report)
           : toText(report);
-  if (values.output) await writeFile(values.output, `${rendered}\n`);
-  else process.stdout.write(`${rendered}\n`);
+  if (values.output) {
+    await writeFile(values.output, `${rendered}\n`);
+    if (process.env.GITHUB_ACTIONS && values.format !== "text") process.stdout.write(`${toText(report)}\n`);
+  } else process.stdout.write(`${rendered}\n`);
   if (values.badge) await writeFile(values.badge, `${toBadge(report)}\n`);
   if (process.env.GITHUB_STEP_SUMMARY && values.format !== "markdown") {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, `${toMarkdown(report)}\n`).catch(() => undefined);

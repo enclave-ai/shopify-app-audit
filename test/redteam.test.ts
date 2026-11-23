@@ -109,7 +109,11 @@ describe("passed deadlines", () => {
     expect(text).toContain("enforced: in effect since 2026-11-20");
     expect(text).not.toContain("days ago");
     expect(text).toContain("app.enclave.ai");
-    expect(toMarkdown(report)).toContain("in effect since 2026-11-20");
+    const markdown = toMarkdown(report);
+    expect(markdown).toContain("in effect since 2026-11-20");
+    expect(markdown).toMatch(/^## ✅ Nothing blocking · 1 to do by hand/);
+    expect(markdown).toContain("### To do by hand (1)");
+    expect(markdown).toContain("utm_medium=github-summary");
   });
 });
 

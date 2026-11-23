@@ -14,6 +14,12 @@ inputs:
   probe-url:
     description: Base URL of a deployed app to probe (staging recommended). Leave empty to skip the probe.
     default: ""
+  shop:
+    description: Dev store domain (<store>.myshopify.com), used with admin-token
+    default: ""
+  admin-token:
+    description: Admin API token for the dev store. Verifies the IP allowlist with one request that should get a 403 from GitHub's runners. Pass it from a secret.
+    default: ""
   fail-on:
     description: fail, warn or none
     default: fail
@@ -21,8 +27,8 @@ inputs:
     description: Write SARIF to this file for GitHub code scanning
     default: shopify-app-audit.sarif
   version:
-    description: npm version of shopify-app-audit to run
-    default: latest
+    description: npm version to run instead of this action's own source (for example 0.2.0). Leave empty to use the action's ref.
+    default: ""
 runs:
   using: composite
   steps:
@@ -34,12 +40,22 @@ runs:
         INPUT_PATH: ${{ inputs.path }}
         INPUT_DISTRIBUTION: ${{ inputs.distribution }}
         INPUT_PROBE_URL: ${{ inputs.probe-url }}
+        INPUT_SHOP: ${{ inputs.shop }}
+        SHOPIFY_APP_AUDIT_ADMIN_TOKEN: ${{ inputs.admin-token }}
         INPUT_FAIL_ON: ${{ inputs.fail-on }}
         INPUT_SARIF: ${{ inputs.sarif }}
         INPUT_VERSION: ${{ inputs.version }}
       run: |
+        if [ -n "$INPUT_VERSION" ]; then
+          run=(npx --yes "shopify-app-audit@$INPUT_VERSION")
+        else
+          (cd "$GITHUB_ACTION_PATH" && npm ci --no-audit --no-fund --loglevel=error >/dev/null)
+          run=(node "$GITHUB_ACTION_PATH/dist/cli.js")
+        fi
         cmd=check
         args=()
         if [ -n "$INPUT_PROBE_URL" ]; then cmd=all; args+=(--url "$INPUT_PROBE_URL"); fi
-        npx --yes "shopify-app-audit@$INPUT_VERSION" "$cmd" "$INPUT_PATH" \
+        if [ -n "$INPUT_SHOP" ]; then args+=(--shop "$INPUT_SHOP"); fi
+        if [ -n "$SHOPIFY_APP_AUDIT_ADMIN_TOKEN" ]; then args+=(--admin-token-env SHOPIFY_APP_AUDIT_ADMIN_TOKEN); fi
+        "${run[@]}" "$cmd" "$INPUT_PATH" \
           --distribution "$INPUT_DISTRIBUTION" --fail-on "$INPUT_FAIL_ON" --format sarif --output "$INPUT_SARIF" "${args[@]}"

@@ -1,12 +1,11 @@
 import pc from "picocolors";
-import { daysUntil, deadlineById, deadlinePhrase } from "../deadlines.js";
+import { daysUntil, deadlineById, deadlinePhrase, relativeDay } from "../deadlines.js";
 
 import type { Finding, Report, Status } from "../types.js";
 
 export const ENCLAVE_SCAN_URL = "https://app.enclave.ai/login?utm_source=shopify-app-audit&utm_campaign=shopify-app-audit";
 
 const ORDER: Status[] = ["fail", "warn", "info", "pass", "skip"];
-const LABEL: Record<Status, string> = { fail: "FAIL", warn: "WARN", info: "TODO", pass: "PASS", skip: "SKIP" };
 
 export const sortFindings = (findings: Finding[]): Finding[] =>
   [...findings].sort((a, b) => ORDER.indexOf(a.status) - ORDER.indexOf(b.status));
@@ -90,7 +89,7 @@ export function toText(report: Report): string {
   if (report.findings.some((f) => f.id === "IP_ALLOWLIST" && f.status === "info")) {
     next.push(`Prove the IP allowlist works:  ${pc.cyan("--shop <dev-store>.myshopify.com --admin-token-env SHOPIFY_ADMIN_TOKEN")}`);
   }
-  next.push(`Run it on every PR:  ${pc.cyan("uses: enclave-ai/shopify-app-audit@v0")}`);
+  if (!process.env.GITHUB_ACTIONS) next.push(`Run it on every PR:  ${pc.cyan("uses: enclave-ai/shopify-app-audit@v0")}`);
   out.push("");
   out.push(pc.bold("Next"));
   for (const n of next) out.push(`  → ${n}`);
@@ -108,39 +107,64 @@ export function toText(report: Report): string {
 
 const md = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 
-export function toMarkdown(report: Report): string {
+function headline(report: Report): string {
   const c = counts(report.findings);
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const rest = [c.fail ? plural(c.warn, "warning") : "", `${c.info} to do by hand`].filter(Boolean).join(" · ");
+  if (c.fail) return `❌ ${plural(c.fail, "blocking issue")} · ${rest}`;
+  if (c.warn) return `⚠️ ${plural(c.warn, "warning")} · nothing blocking · ${rest}`;
+  return `✅ Nothing blocking · ${rest}`;
+}
+
+const MD_ICON: Record<Status, string> = { fail: "❌", warn: "⚠️", info: "📝", pass: "✅", skip: "➖" };
+
+export function toMarkdown(report: Report): string {
   const out: string[] = [];
-  out.push(`## shopify-app-audit`);
+  out.push(`## ${headline(report)}`);
   out.push("");
-  out.push(`**${c.fail} fail, ${c.warn} warn, ${c.info} to do, ${c.pass} pass** (${report.distribution} app, ${report.today})`);
-  out.push("");
-  const open = sortFindings(report.findings).filter((f) => f.status !== "skip");
-  if (open.length) {
-    out.push("| Status | Check | Deadline | Where |");
-    out.push("| --- | --- | --- | --- |");
-    for (const f of open) {
-      const d = deadlineById(f.deadlineId);
-      const deadline = d && f.status !== "pass" ? deadlinePhrase(d.date, report.today) : "";
-      const details = (f.details ?? []).slice(0, 8).map((x) => `<br>- ${md(x)}`).join("");
-      out.push(`| ${LABEL[f.status]} | **${md(f.title)}**<br>${md(f.message)}${details} | ${deadline} | ${md(loc(f).slice(0, 3).join(", "))} |`);
-    }
+  out.push(`<sub>shopify-app-audit ${report.version} · ${report.distribution} app · ${report.today}${report.target ? ` · probed ${md(report.target)}` : ""}</sub>`);
+  const sorted = sortFindings(report.findings);
+  for (const status of ["fail", "warn", "info"] as Status[]) {
+    const group = sorted.filter((f) => f.status === status);
+    if (!group.length) continue;
     out.push("");
+    out.push(`### ${SECTION[status]} (${group.length})`);
+    out.push("");
+    for (const f of group) {
+      out.push(`- ${MD_ICON[status]} **${md(f.title)}** — ${md(f.message)}`);
+      const d = deadlineById(f.deadlineId);
+      if (d) out.push(`  <br>**${daysUntil(d.date, report.today) <= 0 ? "Enforced" : "Deadline"}:** ${deadlinePhrase(d.date, report.today)}. ${md(d.consequence)}`);
+      for (const x of (f.details ?? []).slice(0, 8)) out.push(`  <br>· ${md(x)}`);
+      const where = loc(f).slice(0, 3).map((l) => `\`${md(l)}\``).join(", ");
+      const tail = [where, f.fix ? `**Fix:** ${md(f.fix)}` : "", f.docs ? `[docs](${f.docs})` : ""].filter(Boolean).join(" · ");
+      if (tail) out.push(`  <br>${tail}`);
+    }
   }
+  const quiet = sorted.filter((f) => f.status === "pass" || f.status === "skip");
+  if (quiet.length) {
+    out.push("");
+    out.push(`<details><summary>Passed and skipped (${quiet.length})</summary>`);
+    out.push("");
+    for (const f of quiet) out.push(`- ${MD_ICON[f.status]} **${md(f.title)}** — ${md(f.message)}`);
+    out.push("");
+    out.push("</details>");
+  }
+  out.push("");
   out.push("<details><summary>Shopify security deadlines</summary>");
   out.push("");
   out.push("| Date | Feature | What happens |");
   out.push("| --- | --- | --- |");
   for (const d of report.deadlines) {
-    const when = daysUntil(d.date, report.today) <= 0 ? `${d.date} (in effect)` : d.date;
+    const when = daysUntil(d.date, report.today) <= 0 ? `${d.date} (in effect)` : `${d.date} (${relativeDay(d.date, report.today)})`;
     out.push(`| ${when} | ${md(d.feature)} | ${md(d.consequence)} [source](${d.source}) |`);
   }
   out.push("");
   out.push("</details>");
   out.push("");
+  out.push(`> [!TIP]`);
   out.push(`> **Want the bugs Shopify's rules don't cover?** Enclave's AI finds cross-shop data leaks, broken auth and injection in Shopify apps, and opens the fix as a PR. [Get a free AI vulnerability scan of your repo →](${ENCLAVE_SCAN_URL}&utm_medium=github-summary)`);
   out.push("");
-  out.push("_Static checks and a light probe don't prove an app is secure._");
+  out.push("<sub>Static checks and a light probe don't prove an app is secure.</sub>");
   return out.join("\n");
 }
 

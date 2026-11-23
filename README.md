@@ -7,6 +7,31 @@ npx shopify-app-audit                                       # Will Shopify block
 npx shopify-app-audit probe --url https://staging.myapp.com # Can my live app be hacked?
 ```
 
+No signup, no config. It runs on your repo in a few seconds:
+
+```text
+shopify-app-audit 0.2.0 · public app · 2026-11-23
+
+✖ 5 blocking issues  4 warnings, 4 to do by hand
+
+Shopify deadlines
+  ● 2026-11-20  in effect  IP allowlist
+  ○ 2026-12-01  8d         Network access declaration
+  ○ 2027-01-01  39d        Expiring offline access tokens
+
+Blocking (5)
+✖ Network access declaration NETWORK_ACCESS
+    The app runs on the online store (theme app extension (extensions/reviews)) but
+    shopify.app.toml has no [network_access] allowed_sources.
+    deadline: 2026-12-01 (in 8 days). Deploys (and App Store submissions) are rejected.
+    at shopify.app.toml
+    fix: Add [network_access] with allowed_sources listing every external HTTPS origin ...
+
+Next
+  → Fix the blocking items above, then run this again.
+  → Test the running app:  npx shopify-app-audit probe --url https://staging.your-app.com
+```
+
 ## 1. "Will Shopify block my app?"
 
 It reads your app's code and `shopify.app.toml`, then lists what will break and when. For example:
@@ -86,6 +111,8 @@ node dist/cli.js probe --url http://localhost:3456 --webhook-path /webhooks --pr
 
 Run the server with `SECURE=1` to see every probe pass.
 
+To run a branch or commit without npm: `npx github:enclave-ai/shopify-app-audit#main`.
+
 ## Options
 
 ```
@@ -106,10 +133,12 @@ Run the server with `SECURE=1` to see every probe pass.
 - uses: enclave-ai/shopify-app-audit@v0
   with:
     distribution: public
-    probe-url: https://staging.your-app.com   # optional
+    probe-url: https://staging.your-app.com          # optional
+    shop: my-dev-store.myshopify.com                 # optional: verify the IP allowlist
+    admin-token: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}  # from GitHub's runners, outside your IP ranges
 ```
 
-It writes a job summary and a SARIF file for code scanning. See [examples/github/shopify-app-audit.yml](examples/github/shopify-app-audit.yml).
+It prints the report in the job log, writes a job summary and a SARIF file for code scanning, and runs the code at the action's ref, so it doesn't depend on npm. See [examples/github/shopify-app-audit.yml](examples/github/shopify-app-audit.yml).
 
 ## Limits
 
