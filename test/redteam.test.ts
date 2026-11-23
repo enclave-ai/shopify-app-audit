@@ -114,6 +114,8 @@ describe("passed deadlines", () => {
     expect(markdown).toMatch(/^## ✅ Nothing blocking · 1 to do by hand/);
     expect(markdown).toContain("### To do by hand (1)");
     expect(markdown).toContain("utm_medium=github-summary");
+    report.findings[0].fix = "Send frame-ancestors https://<shop>.myshopify.com";
+    expect(toMarkdown(report)).toContain("https://&lt;shop&gt;.myshopify.com");
   });
 });
 

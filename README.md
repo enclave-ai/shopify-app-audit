@@ -138,7 +138,7 @@ To run a branch or commit without npm: `npx github:enclave-ai/shopify-app-audit#
     admin-token: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}  # from GitHub's runners, outside your IP ranges
 ```
 
-It prints the report in the job log, writes a job summary and a SARIF file for code scanning, and runs the code at the action's ref, so it doesn't depend on npm. See [examples/github/shopify-app-audit.yml](examples/github/shopify-app-audit.yml).
+It prints the report in the job log, writes a job summary and a SARIF file for code scanning, and runs the code at the action's ref, so it doesn't need a published npm release. See [examples/github/shopify-app-audit.yml](examples/github/shopify-app-audit.yml).
 
 ## Limits
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { randomUUID } from "node:crypto";
 import { writeFile, appendFile } from "node:fs/promises";
 import { parseArgs } from "node:util";
 import path from "node:path";
@@ -175,8 +176,8 @@ async function main() {
           : toText(report);
   if (values.output) {
     await writeFile(values.output, `${rendered}\n`);
-    if (process.env.GITHUB_ACTIONS && values.format !== "text") process.stdout.write(`${toText(report)}\n`);
-  } else process.stdout.write(`${rendered}\n`);
+    if (process.env.GITHUB_ACTIONS && values.format !== "text") process.stdout.write(actionsLog(toText(report)));
+  } else process.stdout.write(values.format === "text" ? actionsLog(rendered) : `${rendered}\n`);
   if (values.badge) await writeFile(values.badge, `${toBadge(report)}\n`);
   if (process.env.GITHUB_STEP_SUMMARY && values.format !== "markdown") {
     await appendFile(process.env.GITHUB_STEP_SUMMARY, `${toMarkdown(report)}\n`).catch(() => undefined);
@@ -185,6 +186,12 @@ async function main() {
   const failOn = values["fail-on"];
   const blocking = findings.some((f) => f.status === "fail" || (failOn === "warn" && f.status === "warn"));
   process.exitCode = failOn !== "none" && blocking ? 1 : 0;
+}
+
+function actionsLog(text: string): string {
+  if (!process.env.GITHUB_ACTIONS) return `${text}\n`;
+  const token = randomUUID();
+  return `::stop-commands::${token}\n${text}\n::${token}::\n`;
 }
 
 function toPath(uri: string): string | undefined {
