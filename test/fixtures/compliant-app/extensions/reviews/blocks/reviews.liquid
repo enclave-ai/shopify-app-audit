@@ -1,0 +1,7 @@
+<div id="reviews" data-product-id="{{ product.id }}"></div>
+<a href="https://reviews-demo.example.com/all">Read all reviews</a>
+<script src="https://cdn.reviewsdemo.io/widget.js" defer></script>
+<script src="{{ 'reviews.js' | asset_url }}" defer></script>
+{% schema %}
+{ "name": "Product reviews", "target": "section" }
+{% endschema %}

@@ -1,0 +1,54 @@
+{
+  "name": "shopify-app-audit",
+  "version": "0.1.0",
+  "description": "Check a Shopify app against Shopify's 2026-2027 security deadlines, and probe the running app for the attacks Shopify ranks highest.",
+  "type": "module",
+  "bin": {
+    "shopify-app-audit": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "shopify",
+    "shopify-app",
+    "security",
+    "audit",
+    "webhooks",
+    "hmac",
+    "app-proxy",
+    "network-access",
+    "expiring-tokens"
+  ],
+  "author": "Enclave <hello@enclave.ai> (https://enclave.ai)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enclave-ai/shopify-app-audit.git"
+  },
+  "homepage": "https://github.com/enclave-ai/shopify-app-audit#readme",
+  "bugs": {
+    "url": "https://github.com/enclave-ai/shopify-app-audit/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "picocolors": "^1.1.1",
+    "smol-toml": "^1.8.0",
+    "tinyglobby": "^0.2.14"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "typescript": "~5.9.3",
+    "vitest": "^4.1.12"
+  }
+}

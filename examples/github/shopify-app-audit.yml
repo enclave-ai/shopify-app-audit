@@ -1,0 +1,22 @@
+# Copy to .github/workflows/shopify-app-audit.yml in your Shopify app repo.
+name: shopify-app-audit
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+  security-events: write
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: enclave-ai/shopify-app-audit@v0
+        with:
+          distribution: public
+          # probe-url: https://staging.your-app.com
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: shopify-app-audit.sarif

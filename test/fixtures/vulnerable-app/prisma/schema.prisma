@@ -1,0 +1,5 @@
+model Session {
+  id          String  @id
+  shop        String
+  accessToken String
+}

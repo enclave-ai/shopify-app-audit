@@ -1,0 +1,6 @@
+client_id = "c"
+name = "urls"
+application_url = "https://urls.example.com"
+
+[network_access]
+allowed_sources = ["https://cdn.urls-demo.io", "https://fonts.urls-demo.io"]
