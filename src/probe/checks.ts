@@ -1,5 +1,5 @@
 import type { Finding } from "../types.js";
-import { appProxySignature, joinUrl, request, webhookHmac, type ProbeResponse } from "./http.js";
+import { appProxySignature, isLocalHost, joinUrl, request, webhookHmac, type ProbeResponse } from "./http.js";
 
 export interface ProbeOptions {
   target: string;
@@ -20,6 +20,7 @@ const DOCS = {
 };
 
 const accepted = (res: ProbeResponse): boolean => res.status >= 200 && res.status < 300;
+const rejected = (res: ProbeResponse): boolean => res.status >= 400 && res.status < 500;
 
 const describe = (res: ProbeResponse): string =>
   res.error ? `request failed: ${res.error}` : `HTTP ${res.status}`;
@@ -76,12 +77,12 @@ export async function probeWebhookHmac(options: ProbeOptions): Promise<Finding[]
         docs: DOCS.webhooks,
         details: [`forged HMAC: ${describe(forged)}`, `no HMAC header: ${describe(missing)}`],
       });
-    } else if (forged.error && missing.error) {
+    } else if (!rejected(forged) || !rejected(missing)) {
       findings.push({
         id: "WEBHOOK_HMAC",
-        title: "Webhook endpoint unreachable",
+        title: "Webhook probe inconclusive",
         status: "skip",
-        message: `${path}: ${describe(forged)}`,
+        message: `${path} didn't clearly reject the requests (forged HMAC: ${describe(forged)}, no HMAC: ${describe(missing)}). Expected a 4xx.`,
       });
     } else {
       findings.push({
@@ -91,7 +92,7 @@ export async function probeWebhookHmac(options: ProbeOptions): Promise<Finding[]
         message: `${path} rejected both a forged HMAC (${describe(forged)}) and a missing one (${describe(missing)}).`,
       });
     }
-    if (options.clientSecret) {
+    if (options.clientSecret && (url.startsWith("https://") || isLocalHost(url))) {
       const valid = await request(url, {
         method: "POST",
         headers: webhookHeaders(options.shop, webhookHmac(options.clientSecret, WEBHOOK_BODY)),
@@ -122,9 +123,9 @@ export async function probeAppProxy(options: ProbeOptions): Promise<Finding[]> {
       timestamp: String(Math.floor(Date.now() / 1000)),
     };
     const query = new URLSearchParams(params).toString();
-    const unsigned = await request(`${joinUrl(options.target, path)}?${query}`, { timeoutMs: options.timeoutMs });
+    const unsigned = await request(joinUrl(options.target, path, query), { timeoutMs: options.timeoutMs });
     const forged = await request(
-      `${joinUrl(options.target, path)}?${query}&signature=${appProxySignature("shopify-app-audit-wrong-secret", params)}`,
+      joinUrl(options.target, path, `${query}&signature=${appProxySignature("shopify-app-audit-wrong-secret", params)}`),
       { timeoutMs: options.timeoutMs },
     );
     if (unsigned.status === 404 && forged.status === 404) {
@@ -145,7 +146,14 @@ export async function probeAppProxy(options: ProbeOptions): Promise<Finding[]> {
         fix: "Verify the signature parameter (sorted params, HMAC-SHA256 with the client secret) before responding, and check logged_in_customer_id owns the data you return.",
         docs: DOCS.proxy,
       });
-    } else if (!unsigned.error) {
+    } else if (!rejected(unsigned) || !rejected(forged)) {
+      findings.push({
+        id: "APP_PROXY_SIGNATURE",
+        title: "App proxy probe inconclusive",
+        status: "skip",
+        message: `${path} didn't clearly reject the requests (unsigned: ${describe(unsigned)}, forged: ${describe(forged)}). Expected a 4xx.`,
+      });
+    } else {
       findings.push({
         id: "APP_PROXY_SIGNATURE",
         title: "App proxy signature verification",
@@ -160,14 +168,13 @@ export async function probeAppProxy(options: ProbeOptions): Promise<Finding[]> {
 export async function probeShopParameter(options: ProbeOptions): Promise<Finding[]> {
   const findings: Finding[] = [];
   for (const path of options.appPaths) {
-    const base = joinUrl(options.target, path);
-    const own = await request(`${base}?shop=${encodeURIComponent(options.shop)}&embedded=1`, { timeoutMs: options.timeoutMs });
-    const other = await request(`${base}?shop=${encodeURIComponent(options.otherShop)}&embedded=1`, { timeoutMs: options.timeoutMs });
+    const own = await request(joinUrl(options.target, path, `shop=${encodeURIComponent(options.shop)}&embedded=1`), { timeoutMs: options.timeoutMs });
+    const other = await request(joinUrl(options.target, path, `shop=${encodeURIComponent(options.otherShop)}&embedded=1`), { timeoutMs: options.timeoutMs });
     if (own.status === 404 && other.status === 404) continue;
     const looksLikeData = (res: ProbeResponse) =>
       accepted(res) && !/<title>\s*(login|install|authenticate)/i.test(res.body);
     if (looksLikeData(own) || looksLikeData(other)) {
-      const jsonish = (own.headers["content-type"] ?? "").includes("json") || (other.headers["content-type"] ?? "").includes("json");
+      const jsonish = [own, other].some((r) => looksLikeData(r) && (r.headers["content-type"] ?? "").includes("json"));
       findings.push({
         id: "SHOP_PARAM_TRUST",
         title: "Route answered a request whose only identity was ?shop=",
@@ -179,6 +186,13 @@ export async function probeShopParameter(options: ProbeOptions): Promise<Finding
           `${options.shop}: ${describe(own)} ${own.headers["content-type"] ?? ""} ${own.body.length} bytes`,
           `${options.otherShop}: ${describe(other)} ${other.headers["content-type"] ?? ""} ${other.body.length} bytes`,
         ],
+      });
+    } else if ([own, other].some((r) => r.status === 0 || r.status >= 500)) {
+      findings.push({
+        id: "SHOP_PARAM_TRUST",
+        title: "?shop= probe inconclusive",
+        status: "skip",
+        message: `${path} errored (${describe(own)}, ${describe(other)}), so it's unclear how it handles a bare ?shop=.`,
       });
     } else {
       findings.push({
@@ -193,10 +207,17 @@ export async function probeShopParameter(options: ProbeOptions): Promise<Finding
 }
 
 export async function probeHeaders(options: ProbeOptions): Promise<Finding[]> {
-  const url = `${joinUrl(options.target, options.appPaths[0] ?? "/")}?shop=${encodeURIComponent(options.shop)}&embedded=1`;
+  const url = joinUrl(options.target, options.appPaths[0] ?? "/", `shop=${encodeURIComponent(options.shop)}&embedded=1`);
   const res = await request(url, { timeoutMs: options.timeoutMs, followRedirects: true });
-  if (res.error) {
-    return [{ id: "FRAME_ANCESTORS", title: "Response headers", status: "skip", message: `Couldn't reach ${url}: ${res.error}` }];
+  if (res.error || res.status >= 400) {
+    return [
+      {
+        id: "FRAME_ANCESTORS",
+        title: "Response headers",
+        status: "skip",
+        message: `${url} returned ${describe(res)}. Pass the embedded app's page with --app-path.`,
+      },
+    ];
   }
   const findings: Finding[] = [];
   const csp = res.headers["content-security-policy"] ?? "";

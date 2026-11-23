@@ -29,11 +29,11 @@ export async function request(url: string, options: RequestOptions = {}): Promis
       redirect: followRedirects ? "follow" : "manual",
       signal: controller.signal,
     });
-    const text = await res.text().catch(() => "");
+    const text = await readCapped(res, MAX_BODY_BYTES);
     return {
       status: res.status,
       headers: Object.fromEntries([...res.headers.entries()].map(([k, v]) => [k.toLowerCase(), v])),
-      body: text.slice(0, 20_000),
+      body: text,
       redirected: res.status >= 300 && res.status < 400,
       url,
     };
@@ -51,6 +51,28 @@ export async function request(url: string, options: RequestOptions = {}): Promis
   }
 }
 
+const MAX_BODY_BYTES = 64 * 1024;
+
+async function readCapped(res: Response, max: number): Promise<string> {
+  if (!res.body) return "";
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    while (size < max) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      size += value.byteLength;
+    }
+  } catch {
+    // keep what we have
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+  return Buffer.concat(chunks).subarray(0, max).toString("utf8");
+}
+
 export function webhookHmac(secret: string, rawBody: string): string {
   return createHmac("sha256", secret).update(rawBody, "utf8").digest("base64");
 }
@@ -64,9 +86,11 @@ export function appProxySignature(secret: string, params: Record<string, string>
   return createHmac("sha256", secret).update(sorted, "utf8").digest("hex");
 }
 
-export function joinUrl(base: string, pathname: string): string {
-  const url = new URL(base);
-  const prefix = url.pathname.replace(/\/$/, "");
-  url.pathname = `${prefix}${pathname.startsWith("/") ? pathname : `/${pathname}`}`;
+export function joinUrl(base: string, route: string, extraQuery?: string): string {
+  const url = new URL(route.startsWith("/") ? route : `/${route}`, new URL(base).origin);
+  if (extraQuery) url.search = url.search ? `${url.search}&${extraQuery}` : `?${extraQuery}`;
   return url.toString();
 }
+
+export const isLocalHost = (target: string): boolean =>
+  ["localhost", "127.0.0.1", "[::1]"].includes(new URL(target).hostname);

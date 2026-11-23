@@ -65,3 +65,30 @@ describe("signing helpers", () => {
     expect(appProxySignature("s", { b: "2", a: "1", signature: "x" })).toHaveLength(64);
   });
 });
+
+describe("joinUrl", async () => {
+  const { joinUrl } = await import("../src/probe/http.js");
+  it("resolves routes from the origin and keeps queries", () => {
+    expect(joinUrl("https://x.example.com/app", "/webhooks")).toBe("https://x.example.com/webhooks");
+    expect(joinUrl("https://x.example.com", "/webhooks?source=shopify", "a=1")).toBe(
+      "https://x.example.com/webhooks?source=shopify&a=1",
+    );
+  });
+});
+
+describe("probe against a broken gateway", () => {
+  let server: Server;
+  let url: string;
+  beforeAll(async () => {
+    const { createServer } = await import("node:http");
+    server = createServer((_req, res) => res.writeHead(503).end());
+    await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+    url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  });
+  afterAll(() => server.close());
+
+  it("reports 5xx as inconclusive, not as a pass", async () => {
+    const findings = await runProbe(options(url));
+    expect(findings.filter((f) => f.status === "pass")).toEqual([]);
+  });
+});

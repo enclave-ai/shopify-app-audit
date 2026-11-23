@@ -104,9 +104,9 @@ async function main() {
     }
     const webhookPaths =
       values["webhook-path"] ??
-      [...new Set((project.config?.webhooks ?? []).map((w) => toPath(w.uri, target!)).filter((p): p is string => Boolean(p)))];
+      [...new Set((project.config?.webhooks ?? []).map((w) => toPath(w.uri)).filter((p): p is string => Boolean(p)))];
     const proxyPaths =
-      values["proxy-path"] ?? (project.config?.appProxy ? [toPath(project.config.appProxy.url, target) ?? "/"] : []);
+      values["proxy-path"] ?? (project.config?.appProxy ? [toPath(project.config.appProxy.url) ?? "/"] : []);
     const secretEnv = values["client-secret-env"];
     findings.push(
       ...(await runProbe({
@@ -154,14 +154,13 @@ async function main() {
   process.exitCode = failOn !== "none" && blocking ? 1 : 0;
 }
 
-function toPath(uri: string, base: string): string | undefined {
+function toPath(uri: string): string | undefined {
   if (!uri) return undefined;
   if (uri.startsWith("/")) return uri;
   try {
     const u = new URL(uri);
     if (!/^https?:$/.test(u.protocol)) return undefined;
-    const b = new URL(base);
-    return u.host === b.host ? u.pathname : undefined;
+    return `${u.pathname}${u.search}`;
   } catch {
     return undefined;
   }
