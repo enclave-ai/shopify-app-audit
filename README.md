@@ -32,6 +32,14 @@ Next
   → Test the running app:  npx shopify-app-audit probe --url https://staging.your-app.com
 ```
 
+### Or hand it to your coding agent
+
+Paste this into Claude Code, Cursor or Codex from your app's repo:
+
+```text
+Run `npx shopify-app-audit@latest --format json` in this repo (add `--distribution custom` if this is a custom app, not an App Store app). For every finding with status "fail", then "warn", apply its "fix" in the files under "locations", using the linked "docs" and the Shopify AI Toolkit if it's installed. Don't read or change secrets or .env files, and ask me before changing auth, session storage or the database schema. Re-run the audit until no "fail" findings remain. Then summarize what you changed, and list the findings marked "manual" that I have to do myself in the Dev Dashboard.
+```
+
 ## 1. "Will Shopify block my app?"
 
 It reads your app's code and `shopify.app.toml`, then lists what will break and when. For example:
