@@ -73,3 +73,14 @@ describe("api versions", () => {
     expect(isEndOfLife("2026-10", TODAY)).toBe(false);
   });
 });
+
+describe("config selection", () => {
+  it("prefers shopify.app.toml over named configs", async () => {
+    const project = await loadProject(fixture("multi-config"));
+    expect(project.config?.name).toBe("prod");
+  });
+  it("accepts an absolute --config path", async () => {
+    const project = await loadProject(fixture("multi-config"), path.join(fixture("multi-config"), "shopify.app.staging.toml"));
+    expect(project.config?.name).toBe("staging");
+  });
+});

@@ -142,7 +142,7 @@ export const checkExpiringTokens: Check = async (ctx) => {
 const STOREFRONT_SCOPES = ["write_themes", "write_open_pixels"];
 const SCRIPT_TAG_SCOPES = ["write_script_tags", "read_script_tags"];
 
-const URL_RE = /(href\s*=\s*["']?)?\b(https?):\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)(?::\d+)?/gi;
+const URL_RE = /(href\s*=\s*["']?)?\b(https?):\/\/([a-z0-9-]+(?:\.[a-z0-9-]+)+)(:\d+)?/gi;
 const COMMENT_LINE = /^\s*(\/\/|\*|#|<!--|\{%-?\s*comment)/;
 
 async function collectStorefrontUrls(ctx: StaticContext, files: string[]) {
@@ -154,16 +154,18 @@ async function collectStorefrontUrls(ctx: StaticContext, files: string[]) {
     lines.forEach((lineText, i) => {
       if (COMMENT_LINE.test(lineText)) return;
       for (const m of lineText.matchAll(URL_RE)) {
-        const [, href, scheme, hostRaw] = m;
+        const [, href, scheme, hostRaw, port = ""] = m;
         const host = hostRaw.toLowerCase();
         if (isIgnoredHost(host)) continue;
         const loc = { file, line: i + 1 };
-        if (href) {
+        const before = lineText.slice(0, m.index);
+        const isResource = /<link\b[^>]*$/i.test(before);
+        if (href && !isResource) {
           const list = navigation.get(host) ?? [];
           list.push(loc);
           navigation.set(host, list);
         } else {
-          const origin = `${scheme.toLowerCase()}://${host}`;
+          const origin = `${scheme.toLowerCase()}://${host}${port}`;
           const list = sources.get(origin) ?? [];
           list.push(loc);
           sources.set(origin, list);

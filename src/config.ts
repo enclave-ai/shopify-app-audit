@@ -102,18 +102,20 @@ const IGNORE = [
   "**/*.min.js",
 ];
 
-export const CODE_GLOB = "**/*.{js,jsx,ts,tsx,mjs,cjs,rb,py,php,go,liquid,graphql,gql,erb,prisma}";
+export const CODE_GLOB = "**/*.{js,jsx,ts,tsx,mjs,cjs,rb,py,php,go,liquid,css,scss,graphql,gql,erb,prisma}";
 
 export async function loadProject(dir: string, configName?: string): Promise<AppProject> {
   const abs = path.resolve(dir);
   const candidates = configName
     ? [configName]
-    : (await glob(["shopify.app.toml", "shopify.app.*.toml"], { cwd: abs })).sort();
+    : (await glob(["shopify.app.toml", "shopify.app.*.toml"], { cwd: abs })).sort((a, b) =>
+        a === "shopify.app.toml" ? -1 : b === "shopify.app.toml" ? 1 : a.localeCompare(b),
+      );
   let config: AppConfig | undefined;
-  const first = candidates.find((c) => existsSync(path.join(abs, c)));
+  const first = candidates.find((c) => existsSync(path.resolve(abs, c)));
   if (first) {
-    const raw = await readFile(path.join(abs, first), "utf8");
-    config = parseAppConfig(first, raw);
+    const raw = await readFile(path.resolve(abs, first), "utf8");
+    config = parseAppConfig(path.relative(abs, path.resolve(abs, first)), raw);
   }
   const extConfigs = await glob(["extensions/*/shopify.extension.toml"], { cwd: abs });
   const extensions: Extension[] = [];
