@@ -1,8 +1,9 @@
 import pc from "picocolors";
-import { daysUntil, deadlineById, deadlinePhrase, relativeDay } from "../deadlines.js";
+import { daysUntil, deadlineById, deadlinePhrase } from "../deadlines.js";
+
+import type { Finding, Report, Status } from "../types.js";
 
 export const ENCLAVE_SCAN_URL = "https://app.enclave.ai/login?utm_source=shopify-app-audit&utm_campaign=shopify-app-audit";
-import type { Finding, Report, Status } from "../types.js";
 
 const ORDER: Status[] = ["fail", "warn", "info", "pass", "skip"];
 const LABEL: Record<Status, string> = { fail: "FAIL", warn: "WARN", info: "TODO", pass: "PASS", skip: "SKIP" };
@@ -19,46 +20,89 @@ const color = (status: Status, text: string) =>
 const loc = (f: Finding) =>
   (f.locations ?? []).map((l) => (l.line ? `${l.file}:${l.line}` : l.file));
 
+const ICON: Record<Status, string> = { fail: "✖", warn: "▲", info: "○", pass: "✔", skip: "–" };
+const SECTION: Record<Status, string> = {
+  fail: "Blocking",
+  warn: "Warnings",
+  info: "To do by hand",
+  pass: "Passed",
+  skip: "Skipped",
+};
+
+function verdict(report: Report): string {
+  const c = counts(report.findings);
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  if (c.fail) return pc.red(pc.bold(`✖ ${plural(c.fail, "blocking issue")}`)) + pc.dim(`  ${plural(c.warn, "warning")}, ${c.info} to do by hand`);
+  if (c.warn) return pc.yellow(pc.bold(`▲ ${plural(c.warn, "warning")}`)) + pc.dim(`  nothing blocking, ${c.info} to do by hand`);
+  return pc.green(pc.bold("✔ Nothing blocking")) + pc.dim(`  ${c.info} to do by hand`);
+}
+
 export function toText(report: Report): string {
   const out: string[] = [];
-  out.push(pc.bold("shopify-app-audit") + pc.dim(` v${report.version}  ${report.distribution} app  ${report.today}`));
-  if (report.appDir) out.push(pc.dim(`app: ${report.appDir}`));
-  if (report.target) out.push(pc.dim(`probe target: ${report.target}`));
+  const indent = "    ";
+  out.push(`${pc.bold("shopify-app-audit")} ${pc.dim(`${report.version} · ${report.distribution} app · ${report.today}`)}`);
+  if (report.appDir) out.push(pc.dim(`app     ${report.appDir}`));
+  if (report.target) out.push(pc.dim(`target  ${report.target}`));
   out.push("");
-  out.push(pc.bold("Shopify security deadlines"));
+  out.push(verdict(report));
+  out.push("");
+
+  out.push(pc.bold("Shopify deadlines"));
   for (const d of report.deadlines) {
     const days = daysUntil(d.date, report.today);
-    const when = days <= 0 ? "in effect" : relativeDay(d.date, report.today);
-    const mark = days <= 0 ? pc.red("now  ") : days <= 14 ? pc.yellow("soon ") : pc.dim("     ");
-    out.push(`  ${mark}${d.date}  ${pc.dim(when.padEnd(13))} ${d.feature}`);
+    const when = days <= 0 ? pc.red("in effect".padEnd(11)) : days <= 14 ? pc.yellow(`${days}d`.padEnd(11)) : pc.dim(`${days}d`.padEnd(11));
+    out.push(`  ${days <= 0 ? pc.red("●") : pc.dim("○")} ${pc.dim(d.date)}  ${when}${days <= 0 ? d.feature : pc.dim(d.feature)}`);
   }
-  out.push("");
-  for (const f of sortFindings(report.findings)) {
-    out.push(`${color(f.status, LABEL[f.status].padEnd(4))}  ${pc.bold(f.title)} ${pc.dim(`[${f.id}]`)}`);
-    out.push(`      ${f.message}`);
-    const deadline = deadlineById(f.deadlineId);
-    if (deadline && f.status !== "pass") {
-      const label = daysUntil(deadline.date, report.today) <= 0 ? "enforced:" : "deadline:";
-      out.push(`      ${pc.dim(label)} ${deadlinePhrase(deadline.date, report.today)}. ${deadline.consequence}`);
-    }
-    for (const d of f.details ?? []) out.push(`      ${pc.dim("-")} ${d}`);
-    const locations = loc(f);
-    if (locations.length) out.push(`      ${pc.dim("at")} ${locations.join(", ")}`);
-    if (f.fix && f.status !== "pass") out.push(`      ${pc.dim("fix:")} ${f.fix}`);
-    if (f.docs && f.status !== "pass") out.push(`      ${pc.dim(f.docs)}`);
+
+  const sorted = sortFindings(report.findings);
+  for (const status of ["fail", "warn", "info"] as Status[]) {
+    const group = sorted.filter((f) => f.status === status);
+    if (!group.length) continue;
     out.push("");
+    out.push(pc.bold(`${SECTION[status]} (${group.length})`));
+    group.forEach((f, i) => {
+      if (i) out.push("");
+      out.push(`${color(f.status, ICON[f.status])} ${pc.bold(f.title)} ${pc.dim(f.id)}`);
+      out.push(`${indent}${f.message}`);
+      const deadline = deadlineById(f.deadlineId);
+      if (deadline) {
+        const label = daysUntil(deadline.date, report.today) <= 0 ? "enforced:" : "deadline:";
+        out.push(`${indent}${color(f.status, label)} ${deadlinePhrase(deadline.date, report.today)}. ${deadline.consequence}`);
+      }
+      for (const d of f.details ?? []) out.push(`${indent}${pc.dim("·")} ${d}`);
+      const locations = loc(f);
+      if (locations.length) out.push(`${indent}${pc.dim("at")} ${locations.join(", ")}`);
+      if (f.fix) out.push(`${indent}${pc.green("fix:")} ${f.fix}`);
+      if (f.docs) out.push(`${indent}${pc.dim(f.docs)}`);
+    });
   }
-  const c = counts(report.findings);
-  out.push(
-    `${pc.red(`${c.fail} fail`)}  ${pc.yellow(`${c.warn} warn`)}  ${pc.cyan(`${c.info} todo`)}  ${pc.green(`${c.pass} pass`)}`,
-  );
-  out.push(
-    pc.dim(
-      "Static checks read your code and config. The probe sends a few requests to the URL you give it. Neither proves the app is secure.",
-    ),
-  );
+  for (const status of ["pass", "skip"] as Status[]) {
+    const group = sorted.filter((f) => f.status === status);
+    if (!group.length) continue;
+    out.push("");
+    out.push(pc.bold(`${SECTION[status]} (${group.length})`));
+    for (const f of group) out.push(`${color(status, ICON[status])} ${f.title} ${pc.dim(`· ${f.message}`)}`);
+  }
+
+  const next: string[] = [];
+  if (counts(report.findings).fail) next.push("Fix the blocking items above, then run this again.");
+  if (!report.target) next.push(`Test the running app:  ${pc.cyan("npx shopify-app-audit probe --url https://staging.your-app.com")}`);
+  if (report.findings.some((f) => f.id === "IP_ALLOWLIST" && f.status === "info")) {
+    next.push(`Prove the IP allowlist works:  ${pc.cyan("--shop <dev-store>.myshopify.com --admin-token-env SHOPIFY_ADMIN_TOKEN")}`);
+  }
+  next.push(`Run it on every PR:  ${pc.cyan("uses: enclave-ai/shopify-app-audit@v0")}`);
   out.push("");
-  out.push(`Want a deeper look? Get a free AI vulnerability scan of your app's repo from Enclave: ${ENCLAVE_SCAN_URL}&utm_medium=cli`);
+  out.push(pc.bold("Next"));
+  for (const n of next) out.push(`  → ${n}`);
+
+  out.push("");
+  const bar = pc.magenta("┃");
+  out.push(`${bar} ${pc.bold("Want the bugs Shopify's rules don't cover?")}`);
+  out.push(`${bar} Enclave's AI finds what attackers exploit in Shopify apps: cross-shop data leaks,`);
+  out.push(`${bar} broken auth and injection, and opens the fix as a PR.`);
+  out.push(`${bar} ${pc.bold("Free AI vulnerability scan of your repo:")} ${pc.cyan(`${ENCLAVE_SCAN_URL}&utm_medium=cli`)}`);
+  out.push("");
+  out.push(pc.dim("Static checks read your code and config, and the probe sends a few requests. Neither proves the app is secure."));
   return out.join("\n");
 }
 
@@ -94,7 +138,7 @@ export function toMarkdown(report: Report): string {
   out.push("");
   out.push("</details>");
   out.push("");
-  out.push(`Want a deeper look? Get a [free AI vulnerability scan](${ENCLAVE_SCAN_URL}&utm_medium=github-summary) of your app's repo from Enclave.`);
+  out.push(`> **Want the bugs Shopify's rules don't cover?** Enclave's AI finds cross-shop data leaks, broken auth and injection in Shopify apps, and opens the fix as a PR. [Get a free AI vulnerability scan of your repo →](${ENCLAVE_SCAN_URL}&utm_medium=github-summary)`);
   out.push("");
   out.push("_Static checks and a light probe don't prove an app is secure._");
   return out.join("\n");

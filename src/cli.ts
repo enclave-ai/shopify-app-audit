@@ -11,7 +11,7 @@ import { oldestSupportedVersion } from "./api-versions.js";
 import { toBadge, toJson, toMarkdown, toSarif, toText } from "./report/format.js";
 import type { Distribution, Finding, Report } from "./types.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 const DEFAULT_SHOP = "shopify-app-audit-probe.myshopify.com";
 
 const HELP = `shopify-app-audit ${VERSION}
