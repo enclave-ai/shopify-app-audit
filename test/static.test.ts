@@ -91,3 +91,11 @@ describe("storefront URL collection", async () => {
     expect(findings.filter((f) => f.id === "NETWORK_ACCESS" && f.status !== "pass")).toEqual([]);
   });
 });
+
+describe("sourceCovers default ports", () => {
+  it("treats :443 as the default HTTPS port on either side", () => {
+    expect(sourceCovers("https://cdn.example.com:443", "https://cdn.example.com")).toBe(true);
+    expect(sourceCovers("https://cdn.example.com", "https://cdn.example.com:443")).toBe(true);
+    expect(sourceCovers("https://cdn.example.com", "https://cdn.example.com:8443")).toBe(false);
+  });
+});

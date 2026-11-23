@@ -45,8 +45,11 @@ export function validateNavigationHost(entry: string): string | undefined {
   return undefined;
 }
 
-export function sourceCovers(entry: string, origin: string): boolean {
-  if (entry === origin) return true;
+const stripDefaultPort = (o: string): string => o.replace(/^(https:\/\/[^/]+):443$|^(http:\/\/[^/]+):80$/, "$1$2");
+
+export function sourceCovers(rawEntry: string, origin: string): boolean {
+  const entry = stripDefaultPort(rawEntry);
+  if (entry === stripDefaultPort(origin)) return true;
   if (entry.startsWith("https://*.")) {
     const suffix = entry.slice("https://*".length);
     return (

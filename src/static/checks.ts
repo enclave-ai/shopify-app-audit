@@ -150,7 +150,7 @@ async function collectStorefrontUrls(ctx: StaticContext, files: string[]) {
   const navigation = new Map<string, Location[]>();
   for (const file of files) {
     const raw = await ctx.index.read(file);
-    const text = file.endsWith(".liquid") ? raw : raw.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
+    const text = !/\.s?css$/.test(file) ? raw : raw.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, " "));
     const lines = text.split("\n");
     lines.forEach((lineText, i) => {
       if (COMMENT_LINE.test(lineText)) return;
@@ -164,7 +164,7 @@ async function collectStorefrontUrls(ctx: StaticContext, files: string[]) {
         const linkStart = before.search(/<link\b[^>]*$/i);
         if (linkStart >= 0) {
           const tag = lineText.slice(linkStart, lineText.indexOf(">", m.index) + 1 || undefined);
-          if (!/\brel\s*=\s*["']?[^"'>]*\b(stylesheet|preload|modulepreload|icon|manifest)\b/i.test(tag)) continue;
+          if (/\brel\s*=\s*["']?(alternate|canonical|author|help|license|next|prev|search|me|shortlink)["'\s>]/i.test(tag)) continue;
         }
         const defaultPort = (scheme.toLowerCase() === "https" && port === ":443") || (scheme.toLowerCase() === "http" && port === ":80");
         if (defaultPort) port = "";
