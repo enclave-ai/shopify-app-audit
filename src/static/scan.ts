@@ -27,13 +27,31 @@ export class SourceIndex {
     for (const file of this.project.files.filter(filter)) {
       const text = await this.read(file);
       if (!text) continue;
+      const starts = lineStarts(text);
       for (const m of text.matchAll(re)) {
-        const line = text.slice(0, m.index).split("\n").length;
+        const line = lineOf(starts, m.index ?? 0);
         matches.push({ file, line, text: m[0], groups: m.slice(1) });
       }
     }
     return matches;
   }
+}
+
+function lineStarts(text: string): number[] {
+  const starts = [0];
+  for (let i = text.indexOf("\n"); i !== -1; i = text.indexOf("\n", i + 1)) starts.push(i + 1);
+  return starts;
+}
+
+function lineOf(starts: number[], index: number): number {
+  let lo = 0;
+  let hi = starts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (starts[mid] <= index) lo = mid;
+    else hi = mid - 1;
+  }
+  return lo + 1;
 }
 
 export const isTestFile = (file: string): boolean =>

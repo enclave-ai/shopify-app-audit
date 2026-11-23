@@ -1,6 +1,6 @@
 {
   "name": "shopify-app-audit",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Check a Shopify app against Shopify's 2026-2027 security deadlines, and probe the running app for the attacks Shopify ranks highest.",
   "type": "module",
   "bin": {
@@ -15,6 +15,7 @@
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepare": "tsc -p tsconfig.json",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [

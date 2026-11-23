@@ -6,6 +6,7 @@ export interface ProbeResponse {
   body: string;
   redirected: boolean;
   url: string;
+  finalUrl: string;
   error?: string;
 }
 
@@ -36,6 +37,7 @@ export async function request(url: string, options: RequestOptions = {}): Promis
       body: text,
       redirected: res.status >= 300 && res.status < 400,
       url,
+      finalUrl: res.url || url,
     };
   } catch (err) {
     return {
@@ -44,6 +46,7 @@ export async function request(url: string, options: RequestOptions = {}): Promis
       body: "",
       redirected: false,
       url,
+      finalUrl: url,
       error: err instanceof Error ? err.message : String(err),
     };
   } finally {

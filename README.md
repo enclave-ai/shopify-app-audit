@@ -7,6 +7,31 @@ npx shopify-app-audit                                       # Will Shopify block
 npx shopify-app-audit probe --url https://staging.myapp.com # Can my live app be hacked?
 ```
 
+No signup, no config. It runs on your repo in a few seconds:
+
+```text
+shopify-app-audit 0.2.0 · public app · 2026-11-23
+
+✖ 5 blocking issues  4 warnings, 4 to do by hand
+
+Shopify deadlines
+  ● 2026-11-20  in effect  IP allowlist
+  ○ 2026-12-01  8d         Network access declaration
+  ○ 2027-01-01  39d        Expiring offline access tokens
+
+Blocking (5)
+✖ Network access declaration NETWORK_ACCESS
+    The app runs on the online store (theme app extension (extensions/reviews)) but
+    shopify.app.toml has no [network_access] allowed_sources.
+    deadline: 2026-12-01 (in 8 days). Deploys (and App Store submissions) are rejected.
+    at shopify.app.toml
+    fix: Add [network_access] with allowed_sources listing every external HTTPS origin ...
+
+Next
+  → Fix the blocking items above, then run this again.
+  → Test the running app:  npx shopify-app-audit probe --url https://staging.your-app.com
+```
+
 ## 1. "Will Shopify block my app?"
 
 It reads your app's code and `shopify.app.toml`, then lists what will break and when. For example:
@@ -15,7 +40,17 @@ It reads your app's code and `shopify.app.toml`, then lists what will break and 
 - "You're on non-expiring tokens. You get delisted Jan 1, and API calls fail from Apr 1."
 - "You use ScriptTags. They stop loading Mar 1."
 
-Every item comes with the exact file and line and how to fix it.
+Deadlines that have already passed show as **enforced**, not as countdowns. Every item comes with the exact file and line and how to fix it.
+
+### Already enforced: prove your IP allowlist works
+
+Since November 20, 2026, public apps without an IP allowlist are delisted. It can't be seen in code, so give the tool an Admin API token for a dev store and run it from your laptop or CI, outside your servers' IP ranges:
+
+```bash
+SHOPIFY_ADMIN_TOKEN=shpat_... npx shopify-app-audit --shop my-dev-store.myshopify.com --admin-token-env SHOPIFY_ADMIN_TOKEN
+```
+
+It sends one `{ shop { id } }` Admin API query. A `403` from Shopify means the allowlist is enforced. If the query succeeds, the token works from anywhere and the check fails. This is the check Shopify's docs recommend. The token is only ever sent to `https://<shop>.myshopify.com`.
 
 ## 2. "Can my live app be hacked?"
 
@@ -76,6 +111,8 @@ node dist/cli.js probe --url http://localhost:3456 --webhook-path /webhooks --pr
 
 Run the server with `SECURE=1` to see every probe pass.
 
+To run a branch or commit without npm: `npx github:enclave-ai/shopify-app-audit#main`.
+
 ## Options
 
 ```
@@ -86,6 +123,8 @@ Run the server with `SECURE=1` to see every probe pass.
 --fail-on fail|warn|none         Exit code policy (default: fail)
 --today YYYY-MM-DD               Evaluate deadlines as of a date
 --client-secret-env <name>       Also send one correctly signed webhook
+--shop <domain>                  Your dev store, for --admin-token-env and probe requests
+--admin-token-env <name>         Verify the IP allowlist with one Admin API request (expects 403)
 ```
 
 ## GitHub Action
@@ -94,16 +133,18 @@ Run the server with `SECURE=1` to see every probe pass.
 - uses: enclave-ai/shopify-app-audit@v0
   with:
     distribution: public
-    probe-url: https://staging.your-app.com   # optional
+    probe-url: https://staging.your-app.com          # optional
+    shop: my-dev-store.myshopify.com                 # optional: verify the IP allowlist
+    admin-token: ${{ secrets.SHOPIFY_ADMIN_TOKEN }}  # from GitHub's runners, outside your IP ranges
 ```
 
-It writes a job summary and a SARIF file for code scanning. See [examples/github/shopify-app-audit.yml](examples/github/shopify-app-audit.yml).
+It prints the report in the job log, writes a job summary and a SARIF file for code scanning, and runs the code at the action's ref, so it doesn't need a published npm release. See [examples/github/shopify-app-audit.yml](examples/github/shopify-app-audit.yml).
 
 ## Limits
 
 Passing this tool doesn't mean your app is secure. The static checks match patterns, so they miss things and sometimes flag safe code. The probe only tests a few unauthenticated requests. It can't log in as two merchants and test whether one store can read another's data, which is the cross-shop IDOR Shopify ranks among the top risks.
 
-[Enclave](https://enclave.ai) does that: an AI pentester that signs in as real users and tests every route for tenant isolation, auth bypass and injection.
+[Enclave](https://enclave.ai) does that: an AI pentester that signs in as real users and tests every route for tenant isolation, auth bypass and injection. You can also [get a free AI vulnerability scan of your app's repo](https://app.enclave.ai/login?utm_source=shopify-app-audit&utm_medium=readme&utm_campaign=shopify-app-audit). Nothing in this tool needs it.
 
 ## Contributing
 
