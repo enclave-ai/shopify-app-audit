@@ -107,7 +107,7 @@ export function toText(report: Report): string {
 
 const md = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
-const mdLiteral = (s: string) => md(s).replace(/[_*`~[\]\\]/g, (c) => `&#${c.charCodeAt(0)};`);
+const mdLiteral = (s: string) => s.replace(/\r?\n/g, " ").replace(/[&<>|_*`~[\]\\]/g, (c) => `&#${c.charCodeAt(0)};`);
 
 function headline(report: Report): string {
   const c = counts(report.findings);

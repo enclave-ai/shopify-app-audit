@@ -117,9 +117,11 @@ describe("passed deadlines", () => {
     report.findings[0].fix = "Send frame-ancestors https://<shop>.myshopify.com";
     expect(toMarkdown(report)).toContain("https://&lt;shop&gt;.myshopify.com");
     report.findings[0].locations = [{ file: "app/a&b.ts", line: 3 }];
-    expect(toMarkdown(report)).toContain("<code>app/a&amp;b.ts:3</code>");
+    expect(toMarkdown(report)).toContain("<code>app/a&#38;b.ts:3</code>");
     report.findings[0].locations = [{ file: "app/__init__.ts" }];
     expect(toMarkdown(report)).toContain("<code>app/&#95;&#95;init&#95;&#95;.ts</code>");
+    report.findings[0].locations = [{ file: "app/a|b.ts" }];
+    expect(toMarkdown(report)).toContain("<code>app/a&#124;b.ts</code>");
   });
 });
 
