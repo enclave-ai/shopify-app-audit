@@ -136,7 +136,7 @@ export function toMarkdown(report: Report): string {
       const d = deadlineById(f.deadlineId);
       if (d) out.push(`  <br>**${daysUntil(d.date, report.today) <= 0 ? "Enforced" : "Deadline"}:** ${deadlinePhrase(d.date, report.today)}. ${md(d.consequence)}`);
       for (const x of (f.details ?? []).slice(0, 8)) out.push(`  <br>· ${md(x)}`);
-      const where = loc(f).slice(0, 3).map((l) => `\`${md(l)}\``).join(", ");
+      const where = loc(f).slice(0, 3).map((l) => `<code>${md(l)}</code>`).join(", ");
       const tail = [where, f.fix ? `**Fix:** ${md(f.fix)}` : "", f.docs ? `[docs](${f.docs})` : ""].filter(Boolean).join(" · ");
       if (tail) out.push(`  <br>${tail}`);
     }

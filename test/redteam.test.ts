@@ -116,6 +116,8 @@ describe("passed deadlines", () => {
     expect(markdown).toContain("utm_medium=github-summary");
     report.findings[0].fix = "Send frame-ancestors https://<shop>.myshopify.com";
     expect(toMarkdown(report)).toContain("https://&lt;shop&gt;.myshopify.com");
+    report.findings[0].locations = [{ file: "app/a&b.ts", line: 3 }];
+    expect(toMarkdown(report)).toContain("<code>app/a&amp;b.ts:3</code>");
   });
 });
 
