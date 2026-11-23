@@ -74,7 +74,8 @@ export function toMarkdown(report: Report): string {
     for (const f of open) {
       const d = deadlineById(f.deadlineId);
       const deadline = d && f.status !== "pass" ? `${d.date} (${relativeDay(d.date, report.today)})` : "";
-      out.push(`| ${LABEL[f.status]} | **${md(f.title)}**<br>${md(f.message)} | ${deadline} | ${md(loc(f).slice(0, 3).join(", "))} |`);
+      const details = (f.details ?? []).slice(0, 8).map((x) => `<br>- ${md(x)}`).join("");
+      out.push(`| ${LABEL[f.status]} | **${md(f.title)}**<br>${md(f.message)}${details} | ${deadline} | ${md(loc(f).slice(0, 3).join(", "))} |`);
     }
     out.push("");
   }
@@ -94,8 +95,10 @@ export function toJson(report: Report): string {
   return JSON.stringify(report, null, 2);
 }
 
-const repoPath = (report: Report, file: string): string =>
-  !report.appDir || report.appDir === "." ? file : `${report.appDir.replace(/\\/g, "/").replace(/\/$/, "")}/${file}`;
+const repoPath = (report: Report, file: string): string => {
+  const full = !report.appDir || report.appDir === "." ? file : `${report.appDir.replace(/\\/g, "/").replace(/\/$/, "")}/${file}`;
+  return full.split("/").map(encodeURIComponent).join("/");
+};
 
 export function toSarif(report: Report): string {
   const level = (s: Status) => (s === "fail" ? "error" : s === "warn" ? "warning" : "note");
@@ -124,7 +127,7 @@ export function toSarif(report: Report): string {
               ruleId: f.id,
               level: level(f.status),
               message: {
-                text: [f.message, d ? `Deadline ${d.date}: ${d.consequence}` : "", f.fix ? `Fix: ${f.fix}` : ""]
+                text: [f.message, ...(f.details ?? []), d ? `Deadline ${d.date}: ${d.consequence}` : "", f.fix ? `Fix: ${f.fix}` : ""]
                   .filter(Boolean)
                   .join(" "),
               },
